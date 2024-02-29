@@ -1,0 +1,81 @@
+<!-- Graphics Example Code.  
+    index.html - The web page document containing the canvas (drawing surface).  It launches your JavaScript files.
+-->
+<!DOCTYPE html>
+<html lang="En">
+<head>
+    <meta charset="UTF-8"/>
+    <link href="assets/fav.ico" rel="icon">
+    <title>Tiny Graphics</title>
+    <style>
+        @font-face {
+            font-family: "Game Over Regular";
+            src: url("https://db.onlinewebfonts.com/t/044ff3aa766061f99fbbd171fb682d8c.eot");
+            src: url("https://db.onlinewebfonts.com/t/044ff3aa766061f99fbbd171fb682d8c.eot?#iefix")format("embedded-opentype"),
+            url("https://db.onlinewebfonts.com/t/044ff3aa766061f99fbbd171fb682d8c.woff2")format("woff2"),
+            url("https://db.onlinewebfonts.com/t/044ff3aa766061f99fbbd171fb682d8c.woff")format("woff"),
+            url("https://db.onlinewebfonts.com/t/044ff3aa766061f99fbbd171fb682d8c.ttf")format("truetype"),
+            url("https://db.onlinewebfonts.com/t/044ff3aa766061f99fbbd171fb682d8c.svg#Game Over Regular")format("svg");
+        }
+
+        .horizontal-center-container {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2; /* Ensures it appears above the canvas */
+            left: 0;
+            right: 0;
+        }
+
+        .final-score {
+            font-size: 65px;
+            font-family: 'Game Over Regular';
+            text-shadow: -.7px -.7px 0 #ffffff, .7px -.7px 0 #ffffff, -.7px .7px 0 #ffffff, .7px .7px 0 #ffffff;
+        }
+
+        .game-over-text {
+            font-size: 180px;
+            font-family: 'Game Over Regular';
+            text-shadow: -1px -1px 0 #ffffff, 1px -1px 0 #ffffff, -1px 1px 0 #ffffff, 1px 1px 0 #ffffff;
+        }
+
+        .retry-button {
+            margin-top: 50px;
+            font-size: 80px;
+            font-family: 'Game Over Regular';
+            text-shadow: -.7px -.7px 0 #ffffff, .7px -.7px 0 #ffffff, -.7px .7px 0 #ffffff, .7px .7px 0 #ffffff;
+        }
+    </style>
+</head>
+<body style="background: White">
+<div class="canvas-widget" id="main-canvas">
+    <audio id="background-music" loop>
+        <source src="assets/audio/subway_surfers_theme.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>    
+    <div id="score-container" class="horizontal-center-container" style="top: 550px;">
+        <div id="score-text" class="final-score"></div>
+    </div>
+    <div class="horizontal-center-container" id="game-over-screen" style="visibility: hidden; top: 200px;">
+        <div class="game-over-text">Game Over</div>
+        <div class="final-score" id="final-score" style="text-shadow: -.7px -.7px 0 #ffffff, .7px -.7px 0 #ffffff, -.7px .7px 0 #ffffff, .7px .7px 0 #ffffff;"></div>
+        <div class="retry-button" id="retry-button">Press "g" To Retry</div>
+    </div>
+</div>
+    
+    
+<script type=module>
+    // ********************* THE ENTRY POINT OF YOUR WHOLE PROGRAM STARTS HERE *********************
+    // Indicate which element on the page you want the Canvas_Widget to replace with a 3D WebGL area:
+    const element_to_replace = document.querySelector("#main-canvas");
+    import {Main_Scene, Additional_Scenes, Canvas_Widget} from './main-scene.js';
+    // Import the file that defines a scene.
+    const scenes = [Main_Scene, ...Additional_Scenes].map(scene => new scene());
+    // This line creates your scene.
+    new Canvas_Widget(element_to_replace, scenes);
+</script>
+
+</body>
+</html>
