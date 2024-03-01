@@ -1,6 +1,6 @@
 import { defs, tiny } from './utils/common.js';
 import { Shape_From_File } from './utils/helper.js';
-import { RainParticleSystem } from './rain-particle-system.js';
+import { WeatherParticleSystem } from './weather-particle-system.js';
 
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene, Texture
@@ -10,8 +10,6 @@ const {
 export class MainScene extends Scene {
     constructor() {
         super();
-        // Classes
-        // this.rainSystem = new RainParticleSystem();
     
         // Shapes
         this.shapes = {
@@ -20,12 +18,14 @@ export class MainScene extends Scene {
             // Road and sidewalk
             island: new defs.Capped_Cylinder(50, 100),
             water: new defs.Cube(),
-            raindropSphere: new defs.Subdivision_Sphere(1),
+            raindropSphere: new defs.Subdivision_Sphere(4),
+            snowflakeSphere: new defs.Subdivision_Sphere(1),
             sun: new defs.Subdivision_Sphere(4),
         };
 
-        this.RainParticleSystem = new RainParticleSystem(this.shapes.raindropSphere);
+        this.weatherParticleSystem = new WeatherParticleSystem();
         this.isRaining = false;
+        this.isSnowing = false;
 
         // Materials
         this.materials = {
@@ -40,7 +40,9 @@ export class MainScene extends Scene {
             
             moon: new Material(new defs.Textured_Phong(1), {ambient: 1.0, diffusivity: 0.5, specularity: 1.0, texture: new Texture("assets/textures/moon.png")}),
             
-            raindrop: new Material(new defs.Phong_Shader(), {color: hex_color("#A1C6CC"), ambient: 0.6, diffusivity: 0.5, specularity: 1.0})
+            raindrop: new Material(new defs.Phong_Shader(), {color: hex_color("#9bdde8"), ambient: 0.6, diffusivity: 0.5, specularity: 1.0}),
+
+            snowflake: new Material(new defs.Phong_Shader(), {color: hex_color("#ffffff"), ambient: 0.9, diffusivity: 0.8, specularity: 1.0}),
         };
 
         // Initial camera location
@@ -69,13 +71,19 @@ export class MainScene extends Scene {
         this.key_triggered_button("Restart", ["r"], () => {
             null;
         });
-        this.key_triggered_button("Rain", ["t"], () => {
-            this.isRaining = !this.isRaining;
+        this.key_triggered_button("Rain/Snow", ["t"], () => {
             if (this.isRaining) {
-                // Set a darker background color for rain
+                this.isRaining = false;
+                this.isSnowing = true;
+            } else if (this.isSnowing) {
+                this.isSnowing = false;
+            } else {
+                this.isRaining = true;
+            }
+
+            if (this.isRaining || this.isSnowing) {
                 this.context.clearColor(0.09, 0.1, 0.30, 1.0);
             } else {
-                // Set the original background color for no rain
                 this.context.clearColor(0.46, 0.73, 0.95, 1);
             }    
         });
@@ -96,12 +104,12 @@ export class MainScene extends Scene {
 
         // Setup lighting
         let sun_position = vec4(500, 250, 600, 0);
-        let brightness = this.isRaining ? 100 : 1000000;
+        let brightness = (this.isRaining || this.isSnowing) ? 100 : 1000000;
         program_state.lights = [new Light(sun_position, color(0.99, 0.72, 0.15, 1), brightness)];
         
         // Sun light
         let sun_transform = Mat4.translation(500, 250, 600).times(Mat4.scale(40, 40, 40));
-        let material = this.isRaining ? this.materials.moon : this.materials.sun;
+        let material = (this.isRaining || this.isSnowing) ? this.materials.moon : this.materials.sun;
         this.shapes.sun.draw(context, program_state, sun_transform, material);
 
         // Update time
@@ -114,10 +122,15 @@ export class MainScene extends Scene {
         let water_transform = Mat4.translation(0, -5, -1).times(Mat4.scale(10000, 1, 10000));
         this.shapes.water.draw(context, program_state, water_transform, this.materials.water);
 
+        console.log(this.isSnowing, this.isRaining)
         // Draw the rain
         if (this.isRaining) {
-            this.RainParticleSystem.update(this.shapes.raindropSphere, context, program_state, this.dt);
-            this.RainParticleSystem.draw(context, program_state, this.materials);
+            this.weatherParticleSystem.update(this.shapes.raindropSphere, context, program_state, this.dt, -9.8);
+            this.weatherParticleSystem.draw(context, program_state, this.materials.raindrop, 0.2);
+        }
+        else if (this.isSnowing) {
+            this.weatherParticleSystem.update(this.shapes.snowflakeSphere, context, program_state, this.dt, -5);
+            this.weatherParticleSystem.draw(context, program_state, this.materials.snowflake, 0.1);
         }
     }
 }
