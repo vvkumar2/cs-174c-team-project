@@ -1,67 +1,18 @@
 import { defs, tiny } from './utils/common.js';
 import { Shape_From_File } from './utils/helper.js';
+import { RainParticleSystem } from './rain-particle-system.js';
 
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene, Texture
 } = tiny;
 
-// class Skateboard extends Shape {
-//     constructor() {
-//         super("position", "normal", "texture_coord");
-//         // Main body of the skateboard
-//         this.body = new defs.Cube();
-
-//         // Rounded edges (using spheres)
-//         this.edge1 = new defs.Subdivision_Sphere(4);
-//         this.edge2 = new defs.Subdivision_Sphere(4);
-
-//         // Wheels (using spheres)
-//         this.wheel = new defs.Subdivision_Sphere(4);
-//     }
-
-//     draw(context, program_state, model_transform, material_board, material_wheels) {
-//         // Adjust these values based on the size of your skateboard
-//         let length = 1.25, width = 0.03, height = 0.35;
-
-//         // Draw the main body
-//         let body_transform = model_transform.times(Mat4.scale(length, width, height));
-//         this.body.draw(context, program_state, body_transform, material_board);
-
-//         // Draw the rounded edges
-//         let edge_transform = model_transform.times(Mat4.translation(length, 0, 0))
-//                                             .times(Mat4.scale(height, width, height));
-//         this.edge1.draw(context, program_state, edge_transform, material_board);
-
-//         edge_transform = model_transform.times(Mat4.translation(-length, 0, 0))
-//                                          .times(Mat4.scale(height, width, height));
-//         this.edge2.draw(context, program_state, edge_transform, material_board);
-
-//         let wheel_radius = 0.1;
-//         let wheel_thickness = 0.06;
-//         let wheel_transform;
-
-//         wheel_transform = model_transform.times(Mat4.translation(1, -0.1, 0.3))
-//                                 .times(Mat4.scale(wheel_radius, wheel_radius, wheel_thickness));
-//         this.wheel.draw(context, program_state, wheel_transform, material_wheels);
-
-//         wheel_transform = model_transform.times(Mat4.translation(1, -0.1, -0.3))
-//                                 .times(Mat4.scale(wheel_radius, wheel_radius, wheel_thickness));
-//         this.wheel.draw(context, program_state, wheel_transform, material_wheels);
-
-//         wheel_transform = model_transform.times(Mat4.translation(-1, -0.1, 0.3))
-//                                 .times(Mat4.scale(wheel_radius, wheel_radius, wheel_thickness));
-//         this.wheel.draw(context, program_state, wheel_transform, material_wheels);
-
-//         wheel_transform = model_transform.times(Mat4.translation(-1, -0.1, -0.3))
-//                                 .times(Mat4.scale(wheel_radius, wheel_radius, wheel_thickness));
-//         this.wheel.draw(context, program_state, wheel_transform, material_wheels);
-//     }
-// }
-
 
 export class MainScene extends Scene {
     constructor() {
         super();
+        // Classes
+        // this.rainSystem = new RainParticleSystem();
+    
         // Shapes
         this.shapes = {
             // Existing shapes
@@ -69,53 +20,27 @@ export class MainScene extends Scene {
             // Road and sidewalk
             island: new defs.Capped_Cylinder(50, 100),
             water: new defs.Cube(),
-            // sidewalk: new defs.Cube(),
-            // dashed_line: new defs.Cube(),
-            // // Obstacles
-            // obstacleFence: new Shape_From_File("assets/objects/fence.obj"),
-            // obstacleBench: new Shape_From_File("assets/objects/bench_high_res.obj"),
-            // obstacleTrafficCone: new Shape_From_File("assets/objects/traffic_cone.obj"),
-            // obstacleBarricade: new Shape_From_File("assets/objects/concrete_barrier.obj"),
-            // obstacleTires: new Shape_From_File("assets/objects/tire_stack.obj"),
-            // building: new defs.Cube(),
-            // lampPost: new Shape_From_File("assets/objects/street_lamp.obj"),
+            raindropSphere: new defs.Subdivision_Sphere(1),
             sun: new defs.Subdivision_Sphere(4),
         };
+
+        this.RainParticleSystem = new RainParticleSystem(this.shapes.raindropSphere);
+        this.isRaining = false;
 
         // Materials
         this.materials = {
             // Existing materials
             ...this.materials,
-            // Road
+            
             island: new Material(new defs.Textured_Phong(1), {ambient: 0.8, diffusivity: 0.2, specularity: 0.3, texture: new Texture("assets/textures/grass-3.png")}),
+            
             water: new Material(new defs.Textured_Phong(1), {ambient: 0.9, diffusivity: 0.8, specularity: 0.8, texture: new Texture("assets/textures/water-3.png")}),
-            // sky: new Material(new defs.Textured_Phong(1), {ambient: 0.9, diffusivity: 0.8, specularity: 0.8, texture: new Texture("assets/textures/sky-3.png")}),
-            // water: new Material(new defs.Textured_Phong(1), {ambient: 0.6, diffusivity: 0.2, texture: new Texture("assets/textures/water.jpg")}),
-            // siewalk: new Material(new defs.Textured_Phong(1), {ambient: .8, texture: new Texture("assets/textures/sidewalk.jpg")}),
-            // // Obstacles
-            // obstacleFence: new Material(new defs.Textured_Phong(1), {ambient: .7, diffusivity: 0.2,
-            //     specularity: 0.3, texture: new Texture("assets/textures/wood_bench.png")}),
-            // obstacleBench: new Material(new defs.Textured_Phong(1), {ambient: .8, diffusivity: 0,
-            //     specularity: 0.5, texture: new Texture("assets/textures/wood_fence.jpg")}),
-            // water: new Material(new defs.Phong_Shader(),
-            //     {ambient: 0.4, diffusivity: 0.6, color: hex_color("#0f5e9c")}),
-            // obstacleBus: new Material(new defs.Textured_Phong(), {ambient: .7, diffusivity: 0.6}),
-            // buildingOffice: new Material(new defs.Textured_Phong(1), {ambient: .8, 
-            //     texture: new Texture("assets/textures/office.png")}),
-            // building1: new Material(new defs.Textured_Phong(1), {ambient: .8, 
-            //     texture: new Texture("assets/textures/building1.jpg")}),
-            // building2: dnew Material(new defs.Textured_Phong(1), {ambient: .8, 
-            //     texture: new Texture("assets/textures/building2.jpg")}),
-            // building3: new Material(new defs.Textured_Phong(1), {ambient: .8, 
-            //     texture: new Texture("assets/textures/building3.jpg")}),
-            sun: new Material(new defs.Phong_Shader(), 
-                {color: hex_color("#FDB813"), ambient: 1.0, diffusivity: 1.0, specularity: 1.0}),
-            // obstacleBarricade:  new Material(new defs.Textured_Phong(1), {ambient: .8, diffusivitiy: 0.2, specularity: 0,
-            //     texture: new Texture("assets/textures/concrete.png")}),
-            // obstacleTires: new Material(new defs.Phong_Shader(), {color: hex_color("#12100b"), ambient: 0.5, 
-            //     diffusivity: 0.9, specularity: 0}),
-            // lampPost: new Material(new defs.Phong_Shader(), {color: hex_color("#889bba"), ambient: 0.8, 
-            //     diffusivity: 0.6, specularity: 0.4})
+            
+            sun: new Material(new defs.Textured_Phong(1), {color: hex_color("#e8a425"), ambient: 1.0, diffusivity: 0.7, specularity: 1.0, texture: new Texture("assets/textures/sun.png")}),
+            
+            moon: new Material(new defs.Textured_Phong(1), {ambient: 1.0, diffusivity: 0.5, specularity: 1.0, texture: new Texture("assets/textures/moon.png")}),
+            
+            raindrop: new Material(new defs.Phong_Shader(), {color: hex_color("#A1C6CC"), ambient: 0.6, diffusivity: 0.5, specularity: 1.0})
         };
 
         // Initial camera location
@@ -144,10 +69,23 @@ export class MainScene extends Scene {
         this.key_triggered_button("Restart", ["r"], () => {
             null;
         });
+        this.key_triggered_button("Rain", ["t"], () => {
+            this.isRaining = !this.isRaining;
+            if (this.isRaining) {
+                // Set a darker background color for rain
+                this.context.clearColor(0.09, 0.1, 0.30, 1.0);
+            } else {
+                // Set the original background color for no rain
+                this.context.clearColor(0.46, 0.73, 0.95, 1);
+            }    
+        });
     }
 
 
     display(context, program_state) {
+        // Store context
+        if (!this.context) this.context = context.context;
+
         // Setup program state
         if (!context.scratchpad.controls) {
             this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
@@ -158,21 +96,29 @@ export class MainScene extends Scene {
 
         // Setup lighting
         let sun_position = vec4(500, 250, 600, 0);
-        program_state.lights = [new Light(sun_position, color(0.99, 0.72, 0.15, 1), 1000000)];
+        let brightness = this.isRaining ? 100 : 1000000;
+        program_state.lights = [new Light(sun_position, color(0.99, 0.72, 0.15, 1), brightness)];
         
         // Sun light
         let sun_transform = Mat4.translation(500, 250, 600).times(Mat4.scale(40, 40, 40));
-        this.shapes.sun.draw(context, program_state, sun_transform, this.materials.sun);
+        let material = this.isRaining ? this.materials.moon : this.materials.sun;
+        this.shapes.sun.draw(context, program_state, sun_transform, material);
 
-
+        // Update time
         this.t = program_state.animation_time / 1000, this.dt = program_state.animation_delta_time / 1000;
 
         // Draw the island and rotate it by 90 degrees
-        let island_transform = Mat4.rotation(Math.PI / 2, 1, 0, 0).times(Mat4.translation(0, 0, -1)).times(Mat4.scale(200, 200, 1));
+        let island_transform = Mat4.rotation(Math.PI / 2, 1, 0, 0).times(Mat4.scale(200, 200, 1));
         this.shapes.island.draw(context, program_state, island_transform, this.materials.island);
         // Draw the water
         let water_transform = Mat4.translation(0, -5, -1).times(Mat4.scale(10000, 1, 10000));
         this.shapes.water.draw(context, program_state, water_transform, this.materials.water);
+
+        // Draw the rain
+        if (this.isRaining) {
+            this.RainParticleSystem.update(this.shapes.raindropSphere, context, program_state, this.dt);
+            this.RainParticleSystem.draw(context, program_state, this.materials);
+        }
     }
 }
 
