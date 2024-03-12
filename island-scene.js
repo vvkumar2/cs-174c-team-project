@@ -1,3 +1,5 @@
+import { Articulated_Human } from './articulated-body/human.js';
+import { Articulated_Snake } from './articulated-body/snake.js';
 import { defs, tiny } from './utils/common.js';
 import { Shape_From_File } from './utils/helper.js';
 import { WeatherParticleSystem } from './weather-particle-system.js';
@@ -51,6 +53,9 @@ export class MainScene extends Scene {
             vec3(0, 0, 10), // at position
             vec3(0, 0, 1) // up direction
         );
+
+        this.human = new Articulated_Human();
+        this.snake = new Articulated_Snake();
 
     }
 
@@ -132,6 +137,9 @@ export class MainScene extends Scene {
             this.weatherParticleSystem.update(this.shapes.snowflakeSphere, context, program_state, this.dt, -5);
             this.weatherParticleSystem.draw(context, program_state, this.materials.snowflake, 0.1);
         }
+
+        this.human.draw(context, program_state, this.materials.snowflake);
+        this.snake.draw(context, program_state, this.materials.snowflake);
     }
 }
 
