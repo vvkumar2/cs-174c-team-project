@@ -239,6 +239,9 @@ class Arc {
     constructor(name, parent, child, location) {
         this.name = name;
         this.parent_node = parent;
+        if (this.parent_node !== null) {
+            this.parent_node.children_arcs.push(this);
+        }
         this.child_node = child;
         this.location_matrix = location;
         this.articulation_matrix = Mat4.identity();

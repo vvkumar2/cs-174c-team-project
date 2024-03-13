@@ -18,12 +18,13 @@ class Articulated_Snake extends Articulated_Body_Base {
         let arcs = [];
 
         const width = 0.2;
-        const node_length = 0.3;
-        const num_nodes = 50;
+        const node_length = 0.4;
+        const num_nodes = 40;
 
+        const node_transform = Mat4.scale(node_length, width, width);
+        const body_location = Mat4.translation(node_length, 0, 0);
         // head node
-        const head_transform = Mat4.scale(node_length, width, width);
-        const head_node = new Node("head", sphere_shape, head_transform);
+        const head_node = new Node("head", sphere_shape, node_transform.copy());
         // root->head
         const root_location = Mat4.translation(0, 1, 0);
         const root = new Arc("root", null, head_node, root_location);
@@ -36,16 +37,13 @@ class Articulated_Snake extends Articulated_Body_Base {
         let prev_node = head_node;
         let prev_arc = root;
         for (let i = 0; i < num_nodes - 1; i++) {
-            let body_transform = Mat4.scale(node_length, width, width);
-            const body_node = new Node("body" + i, sphere_shape, body_transform);
-            // head->body
-            const body_location = Mat4.translation(node_length, 0, 0);
-            const body = new Arc("body" + i, prev_node, body_node, body_location);
+            const name = "body" + i;
+            const body_node = new Node(name, sphere_shape, node_transform.copy());
+            const body = new Arc(name, prev_node, body_node, body_location.copy());
             body.set_dof(false, true, false);
-            prev_node.children_arcs.push(body);
             prev_node = body_node;
             prev_arc = body;
-            nodes.push(prev_node);
+            nodes.push(body_node);
             arcs.push(body);
         }
 
@@ -61,16 +59,19 @@ class Articulated_Snake extends Articulated_Body_Base {
         this.fixed_arc = this.arcs[Math.floor(this.num_nodes * 0.5)];
         this.u = 0; 
         this.curve_speed = 2;
-        this.start_curviness = 0.2;
-        this.end_curviness = 0.5;
+        this.start_curviness = 0.6;
+        this.end_curviness = 1.5;
     }
 
     update(dt) {
         // only one underlying parameter
         this.u += this.curve_speed * dt;
+        if (this.u > 2 * Math.PI) {
+            this.u -= 2 * Math.PI;
+        }
         for (let i = 1; i < this.arcs.length; i++) { 
             const curviness = this.start_curviness + (this.end_curviness - this.start_curviness) * i / this.num_nodes;
-            const theta = curviness * Math.sin(i * this.node_length + this.u);
+            const theta = curviness * Math.sin(i * this.node_length + this.u) * this.node_length;
             const arc = this.arcs[i]; 
             arc.update_articulation([theta]); 
         }
