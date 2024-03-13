@@ -34,7 +34,7 @@ class Articulated_Fish extends Articulated_Body_Base {
         arcs.push(root);
 
         // fin
-        const fin_size = 0.5 * size;
+        const fin_size = 0.6 * size;
         const fin_sheer = Matrix.of(
             [1, -1, 0, 0],
             [0, 1, 0, 0],
@@ -63,35 +63,42 @@ class Articulated_Fish extends Articulated_Body_Base {
         arcs.push(right_fin_arc);
 
         const tail_fin_transform = Mat4.scale(1,1.5,1).times(fin_transform);
-        const top_tail_fin_node = new Node("top_tail_fin", shapes.triangle, body_material, tail_fin_transform);
-        nodes.push(top_tail_fin_node);
-        const top_tail_fin_location = Mat4.translation(-length*0.8, -fin_size/2, 0).times(Mat4.rotation(Math.PI / 2, 0, 0, 1));
-        const top_tail_fin_arc = new Arc("top_tail_fin", body_node, top_tail_fin_node, top_tail_fin_location);
-        top_tail_fin_arc.set_dof(true, false, false);
-        arcs.push(top_tail_fin_arc);
+        const tail_fin_separation_angle = Math.PI / 18;
+        const num_tail_fins = 5;
 
-        const bottom_tail_fin_node = new Node("bottom_tail_fin", shapes.triangle, body_material, Mat4.scale(-1,1,1).times(tail_fin_transform));
-        nodes.push(bottom_tail_fin_node);
-        const bottom_tail_fin_location = Mat4.translation(-length*0.8, fin_size/2, 0).times(Mat4.rotation(Math.PI / 2, 0, 0, 1));
-        const bottom_tail_fin_arc = new Arc("bottom_tail_fin", body_node, bottom_tail_fin_node, bottom_tail_fin_location);
-        bottom_tail_fin_arc.set_dof(true, false, false);
-        arcs.push(bottom_tail_fin_arc);
+        // loop through creation of 3 tail fins, each 10 degrees apart
+        for (let i = 0; i < num_tail_fins; i++) {
+            const tail_fin_size = 1 - 0.3 * Math.abs(i-Math.floor(num_tail_fins/2)) / Math.floor(num_tail_fins/2);
+            const angle = (i-Math.floor(num_tail_fins/2)) * tail_fin_separation_angle;
+
+            const top_tail_fin_node = new Node("top_tail_fin" + i, shapes.triangle, body_material, Mat4.scale(tail_fin_size,tail_fin_size,tail_fin_size).times(tail_fin_transform));
+            nodes.push(top_tail_fin_node);
+            const top_tail_fin_location = Mat4.translation(-length*0.8, -fin_size/2, 0).times(Mat4.rotation(angle, 0, 1, 0)).times(Mat4.rotation(Math.PI / 2, 0, 0, 1));
+            const top_tail_fin_arc = new Arc("top_tail_fin" + i, body_node, top_tail_fin_node, top_tail_fin_location);
+            top_tail_fin_arc.set_dof(true, false, false);
+            arcs.push(top_tail_fin_arc);
+
+            const bottom_tail_fin_node = new Node("bottom_tail_fin" + i, shapes.triangle, body_material, Mat4.scale(-tail_fin_size,tail_fin_size,tail_fin_size).times(tail_fin_transform));
+            nodes.push(bottom_tail_fin_node);
+            const bottom_tail_fin_location = Mat4.translation(-length*0.8, fin_size/2, 0).times(Mat4.rotation(angle, 0, 1, 0)).times(Mat4.rotation(Math.PI / 2, 0, 0, 1));
+            const bottom_tail_fin_arc = new Arc("bottom_tail_fin" + i, body_node, bottom_tail_fin_node, bottom_tail_fin_location);
+            bottom_tail_fin_arc.set_dof(true, false, false);
+            arcs.push(bottom_tail_fin_arc);
+        }
 
         // eye
         const eye_size = 0.12 * size;
-        const eye_transform = Mat4.scale(eye_size, eye_size, eye_size).times(Mat4.rotation(Math.PI / 16, 0, 1, 0)).times(Mat4.rotation(Math.PI / 2, 0, 0, 1)).times(Mat4.rotation(-Math.PI / 2, 0, 1, 0));
+        const eye_transform = Mat4.scale(eye_size, eye_size, 0.5*eye_size).times(Mat4.rotation(Math.PI / 16, 0, 1, 0)).times(Mat4.rotation(Math.PI / 2, 0, 0, 1)).times(Mat4.rotation(-Math.PI / 2, 0, 1, 0));
         const left_eye_node = new Node("left_eye", shapes.sphere, eye_material, eye_transform);
         nodes.push(left_eye_node);
-        const left_eye_location = Mat4.translation(length*0.5, height*0.4, width*0.5);
+        const left_eye_location = Mat4.translation(length*0.5, height*0.4, width*0.7);
         const left_eye_arc = new Arc("left_eye", body_node, left_eye_node, left_eye_location);
-        left_eye_arc.set_dof(false, false, false);
         arcs.push(left_eye_arc);
 
         const right_eye_node = new Node("right_eye", shapes.sphere, eye_material, Mat4.scale(1,1,-1).times(eye_transform));
         nodes.push(right_eye_node);
-        const right_eye_location = Mat4.translation(length*0.5, height*0.4, -width*0.5);
+        const right_eye_location = Mat4.translation(length*0.5, height*0.4, -width*0.7);
         const right_eye_arc = new Arc("right_eye", body_node, right_eye_node, right_eye_location);
-        right_eye_arc.set_dof(false, false, false);
         arcs.push(right_eye_arc);
 
         
@@ -106,12 +113,13 @@ class Articulated_Fish extends Articulated_Body_Base {
         this.height = height;
         this.width = width;
         this.length = length;
+        this.num_tail_fins = num_tail_fins;
         this.body_u = 0;
         this.fin_u = 0;
-        this.body_wiggle_speed = 2;
-        this.body_wiggle_size = 1.5;
+        this.body_wiggle_speed = 5;
+        this.body_wiggle_size = 0.3;
         this.fin_wiggle_speed = 10;
-        this.fin_wiggle_size = 0.4;
+        this.fin_wiggle_size = 0.7;
     }
 
     update(dt) {
@@ -123,7 +131,9 @@ class Articulated_Fish extends Articulated_Body_Base {
         this.arcs[1].update_articulation([fin_theta]);
         this.arcs[2].update_articulation([fin_theta]);
         this.arcs[3].update_articulation([-fin_theta]);
-        this.arcs[4].update_articulation([fin_theta]);
-        this.arcs[5].update_articulation([fin_theta]);
+        for (let i = 0; i < this.num_tail_fins; i++) {
+            this.arcs[4 + 2 * i].update_articulation([fin_theta]);
+            this.arcs[5 + 2 * i].update_articulation([fin_theta]);
+        }
     }
 }

@@ -13,6 +13,8 @@ const materials = {
     }),
 };
 
+const DEBUG_MODE = false;
+
 export
 const Articulated_Body_Base = 
 class Articulated_Body_Base {
@@ -152,7 +154,7 @@ class Articulated_Body_Base {
             matrix.post_multiply(T);
             node.shape.draw(webgl_manager, uniforms, matrix, node.material);
 
-            if (arc.end_effector !== null) {
+            if (arc.end_effector !== null && DEBUG_MODE) {
                 // Draw the end effector as a dot
                 let v = matrix.times(arc.end_effector.local_position);
                 let transform = Mat4.translation(v[0], v[1], v[2]).times(Mat4.scale(0.1, 0.1, 0.1));
