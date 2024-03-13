@@ -57,7 +57,7 @@ class Articulated_Fish extends Articulated_Body_Base {
 
         const right_fin_node = new Node("right_fin", shapes.triangle, body_material, fin_transform);
         nodes.push(right_fin_node);
-        const right_fin_location = Mat4.translation(length/5-fin_size/2, -height/3, -width * 0.8).times(Mat4.rotation(Math.PI / 2, -1, 0, 0));
+        const right_fin_location = Mat4.translation(length/5-fin_size/2, -height/3, -width * 0.8).times(Mat4.rotation(Math.PI / 2, -1, 0, 0)).times(Mat4.rotation(-Math.PI/4, 1, 0, 0));
         const right_fin_arc = new Arc("right_fin", body_node, right_fin_node, right_fin_location);
         right_fin_arc.set_dof(true, false, false);
         arcs.push(right_fin_arc);

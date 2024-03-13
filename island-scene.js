@@ -47,6 +47,8 @@ export class MainScene extends Scene {
 
             snowflake: new Material(new defs.Phong_Shader(), {color: hex_color("#ffffff"), ambient: 0.9, diffusivity: 0.8, specularity: 1.0}),
 
+            snake: new Material(new defs.Textured_Phong(), {ambient: 0.9, diffusivity: 0.8, specularity: 1.0, texture: new Texture("assets/textures/snake.jpg")}),
+
             fish: new Material(new defs.Textured_Phong(), {ambient: 0.9, diffusivity: 0.8, specularity: 1.0, texture: new Texture("assets/textures/fish.jpg")}),
             // fish_eye: new Material(new defs.Phong_Shader(), {color: hex_color("#000000"), ambient: 0.9, diffusivity: 0.8, specularity: 1.0}),
             fish_eye: new Material(new defs.Textured_Phong(), {ambient: 0.9, diffusivity: 0.8, specularity: 1.0, texture: new Texture("assets/textures/fisheye.jpeg")}),
@@ -60,7 +62,7 @@ export class MainScene extends Scene {
         );
 
         this.human = new Articulated_Human(this.materials.snowflake);
-        this.snake = new Articulated_Snake(this.materials.snowflake);
+        this.snake = new Articulated_Snake(this.materials.snake);
         this.fish = new Articulated_Fish(this.materials.fish, this.materials.fish_eye);
 
     }
