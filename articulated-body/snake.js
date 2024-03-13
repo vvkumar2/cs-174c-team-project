@@ -12,7 +12,7 @@ const shapes = {
 export
 const Articulated_Snake = 
 class Articulated_Snake extends Articulated_Body_Base {
-    constructor() {
+    constructor(material) {
         let sphere_shape = shapes['sphere'];
         let nodes = [];
         let arcs = [];
@@ -24,7 +24,7 @@ class Articulated_Snake extends Articulated_Body_Base {
         const node_transform = Mat4.scale(node_length, width, width);
         const body_location = Mat4.translation(node_length, 0, 0);
         // head node
-        const head_node = new Node("head", sphere_shape, node_transform.copy());
+        const head_node = new Node("head", sphere_shape, material, node_transform.copy());
         // root->head
         const root_location = Mat4.translation(0, 1, 0);
         const root = new Arc("root", null, head_node, root_location);
@@ -38,7 +38,7 @@ class Articulated_Snake extends Articulated_Body_Base {
         let prev_arc = root;
         for (let i = 0; i < num_nodes - 1; i++) {
             const name = "body" + i;
-            const body_node = new Node(name, sphere_shape, node_transform.copy());
+            const body_node = new Node(name, sphere_shape, material, node_transform.copy());
             const body = new Arc(name, prev_node, body_node, body_location.copy());
             body.set_dof(false, true, false);
             prev_node = body_node;

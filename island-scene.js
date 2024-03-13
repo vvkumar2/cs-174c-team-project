@@ -1,5 +1,6 @@
 import { Articulated_Human } from './articulated-body/human.js';
 import { Articulated_Snake } from './articulated-body/snake.js';
+import { Articulated_Fish } from './articulated-body/fish.js';
 import { defs, tiny } from './utils/common.js';
 import { Shape_From_File } from './utils/helper.js';
 import { WeatherParticleSystem } from './weather-particle-system.js';
@@ -45,6 +46,10 @@ export class MainScene extends Scene {
             raindrop: new Material(new defs.Phong_Shader(), {color: hex_color("#9bdde8"), ambient: 0.6, diffusivity: 0.5, specularity: 1.0}),
 
             snowflake: new Material(new defs.Phong_Shader(), {color: hex_color("#ffffff"), ambient: 0.9, diffusivity: 0.8, specularity: 1.0}),
+
+            fish: new Material(new defs.Textured_Phong(), {ambient: 0.9, diffusivity: 0.8, specularity: 1.0, texture: new Texture("assets/textures/fish.jpg")}),
+            // fish_eye: new Material(new defs.Phong_Shader(), {color: hex_color("#000000"), ambient: 0.9, diffusivity: 0.8, specularity: 1.0}),
+            fish_eye: new Material(new defs.Textured_Phong(), {ambient: 0.9, diffusivity: 0.8, specularity: 1.0, texture: new Texture("assets/textures/fisheye.jpeg")}),
         };
 
         // Initial camera location
@@ -54,8 +59,9 @@ export class MainScene extends Scene {
             vec3(0, 0, 1) // up direction
         );
 
-        this.human = new Articulated_Human();
-        this.snake = new Articulated_Snake();
+        this.human = new Articulated_Human(this.materials.snowflake);
+        this.snake = new Articulated_Snake(this.materials.snowflake);
+        this.fish = new Articulated_Fish(this.materials.fish, this.materials.fish_eye);
 
     }
 
@@ -138,9 +144,11 @@ export class MainScene extends Scene {
             this.weatherParticleSystem.draw(context, program_state, this.materials.snowflake, 0.1);
         }
 
-        this.human.draw(context, program_state, this.materials.snowflake);
+        this.human.draw(context, program_state);
         this.snake.update(this.dt);
-        this.snake.draw(context, program_state, this.materials.snowflake);
+        this.snake.draw(context, program_state);
+        this.fish.update(this.dt);
+        this.fish.draw(context, program_state);
     }
 }
 

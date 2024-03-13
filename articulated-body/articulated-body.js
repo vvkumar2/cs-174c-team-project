@@ -135,12 +135,12 @@ class Articulated_Body_Base {
         }
     }
 
-    draw(webgl_manager, uniforms, material) {
+    draw(webgl_manager, uniforms) {
         this.matrix_stack = [];
-        this._rec_draw(this.root, Mat4.identity(), webgl_manager, uniforms, material);
+        this._rec_draw(this.root, Mat4.identity(), webgl_manager, uniforms);
     }
 
-    _rec_draw(arc, matrix, webgl_manager, uniforms, material) {
+    _rec_draw(arc, matrix, webgl_manager, uniforms) {
         if (arc !== null) {
             const L = arc.location_matrix;
             const A = arc.articulation_matrix;
@@ -150,7 +150,7 @@ class Articulated_Body_Base {
             const node = arc.child_node;
             const T = node.transform_matrix;
             matrix.post_multiply(T);
-            node.shape.draw(webgl_manager, uniforms, matrix, material);
+            node.shape.draw(webgl_manager, uniforms, matrix, node.material);
 
             if (arc.end_effector !== null) {
                 // Draw the end effector as a dot
@@ -162,7 +162,7 @@ class Articulated_Body_Base {
             matrix = this.matrix_stack.pop();
             for (const next_arc of node.children_arcs) {
                 this.matrix_stack.push(matrix.copy());
-                this._rec_draw(next_arc, matrix, webgl_manager, uniforms, material);
+                this._rec_draw(next_arc, matrix, webgl_manager, uniforms);
                 matrix = this.matrix_stack.pop();
             }
         }
@@ -225,9 +225,10 @@ class Articulated_Body_Base {
 export
 const Node =
 class Node {
-    constructor(name, shape, transform) {
+    constructor(name, shape, material, transform) {
         this.name = name;
         this.shape = shape;
+        this.material = material;
         this.transform_matrix = transform;
         this.children_arcs = [];
     }
