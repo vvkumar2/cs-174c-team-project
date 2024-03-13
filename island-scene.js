@@ -4,6 +4,7 @@ import { Articulated_Fish } from './articulated-body/fish.js';
 import { defs, tiny } from './utils/common.js';
 import { Shape_From_File } from './utils/helper.js';
 import { WeatherParticleSystem } from './weather-particle-system.js';
+import { Tree } from './tree.js';
 
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene, Texture
@@ -52,6 +53,11 @@ export class MainScene extends Scene {
             fish: new Material(new defs.Textured_Phong(), {ambient: 0.9, diffusivity: 0.8, specularity: 1.0, texture: new Texture("assets/textures/fish.jpg")}),
             // fish_eye: new Material(new defs.Phong_Shader(), {color: hex_color("#000000"), ambient: 0.9, diffusivity: 0.8, specularity: 1.0}),
             fish_eye: new Material(new defs.Textured_Phong(), {ambient: 0.9, diffusivity: 0.8, specularity: 1.0, texture: new Texture("assets/textures/fisheye.jpeg")}),
+      
+            trunk_material: new Material(new defs.Textured_Phong(), {color: hex_color("#A52A2A"), ambient: 0.3, diffusivity: 0.5, specularity: 1.0, texture: new Texture("assets/textures/moon.png")}),
+
+            foliage_material: new Material(new defs.Textured_Phong(), {color: hex_color("#90EE90"), ambient: 0.5, diffusivity: 0.2, specularity: 1.0, texture: new Texture("assets/textures/moon.png")}),
+      
         };
 
         // Initial camera location
@@ -65,7 +71,9 @@ export class MainScene extends Scene {
         this.snake = new Articulated_Snake(this.materials.snake);
         this.fish = new Articulated_Fish(this.materials.fish, this.materials.fish_eye);
 
-    }
+        this.tree = new Tree(this.materials.trunk_material, this.materials.foliage_material);
+
+    }   
 
     // Controls
     make_control_panel() {
@@ -151,6 +159,9 @@ export class MainScene extends Scene {
         this.snake.draw(context, program_state);
         this.fish.update(this.dt);
         this.fish.draw(context, program_state);
+
+        // Draw the tree
+        this.tree.draw(context, program_state, Mat4.translation(-10, 3, 2));
     }
 }
 
