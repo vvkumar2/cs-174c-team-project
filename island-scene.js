@@ -56,7 +56,7 @@ export class MainScene extends Scene {
       
             trunk_material: new Material(new defs.Textured_Phong(), {color: hex_color("#A52A2A"), ambient: 0.3, diffusivity: 0.5, specularity: 1.0, texture: new Texture("assets/textures/moon.png")}),
 
-            foliage_material: new Material(new defs.Textured_Phong(), {color: hex_color("#90EE90"), ambient: 0.5, diffusivity: 0.2, specularity: 1.0, texture: new Texture("assets/textures/moon.png")}),
+            foliage_material: new Material(new defs.Textured_Phong(), {color: hex_color("#90EE90"), ambient: 0.4, diffusivity: 0.1, specularity: 1.0, texture: new Texture("assets/textures/foliage.png")}),
       
         };
 
