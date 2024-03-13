@@ -21,7 +21,7 @@
   - 
 
 ### Rebecca Heo
-- **Email**: 
+- **Email**: heorebecca126@g.ucla.edu
 - **Student ID**: 805333858
 - **Contributions**:
   - 
