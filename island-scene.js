@@ -162,6 +162,23 @@ export class MainScene extends Scene {
 
         // Draw the tree
         this.tree.draw(context, program_state, Mat4.translation(-10, 3, 2));
+
+        // Example positions for the trees
+        
+        let treePositions = [
+            [-50, 3, 2],
+            [80, 3, -8],
+            [-10, 3, 40],
+            [42, 3, 15],
+            [-30, 3, -16],
+            [8, 3, 32],
+            [-3, 3, -52],
+            [20, 3, 0]
+        ];
+        
+        // Draw multiple trees
+        
+        this.tree.drawMultiple(context, program_state, treePositions);
     }
 }
 

@@ -8,7 +8,7 @@ export class Tree extends Shape {
         // Define the tree trunk as a Cylinder
         this.trunk = new defs.Capped_Cylinder(10, 10);
 
-        // Define the foliage as a combination of Triangles and Squares
+        // Define the foliage as a combination of Squares
         this.foliage = [];
         for (let i = 0; i < 3; i++) {
             this.foliage.push(new defs.Square());
@@ -29,7 +29,7 @@ export class Tree extends Shape {
         let angle_offset = 0;
         for (let i = 0; i < this.foliage.length; i++) {
             // Calculate a swaying motion for the foliage
-            let sway_angle = Math.sin(program_state.animation_time / 500 + i) * 0.1; // Sway back and forth by 0.1 radians
+            let sway_angle = Math.sin(program_state.animation_time / 500 + i) * 0.3; // Sway back and forth by 0.1 radians
     
             let foliage_transform = transform.times(Mat4.translation(0, 5, 0))
                                                .times(Mat4.rotation(angle_offset + sway_angle, 0, 1, 0)) // Add the sway angle to the rotation
@@ -38,4 +38,11 @@ export class Tree extends Shape {
             angle_offset += Math.PI / 3; // 60 degrees
         }
     }
- }
+ 
+    // Method to draw multiple trees
+    drawMultiple(context, program_state, positions) {
+        for (let position of positions) {
+            this.draw(context, program_state, Mat4.translation(...position));
+        }
+    }
+}
