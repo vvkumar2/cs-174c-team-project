@@ -21,7 +21,7 @@ class Articulated_Human extends Articulated_Body_Base {
         const torso_transform = Mat4.scale(1, 2.5, 0.5);
         const torso_node = new Node("torso", sphere_shape, torso_transform);
         // root->torso
-        const root_location = Mat4.translation(0, 5, 0);
+        const root_location = Mat4.translation(0, 5, 5);
         const root = new Arc("root", null, torso_node, root_location);
 
         // head node

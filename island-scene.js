@@ -49,7 +49,7 @@ export class MainScene extends Scene {
 
         // Initial camera location
         this.initial_camera_location = Mat4.look_at(
-            vec3(0, 80, -120), // eye position
+            vec3(0, 8, -20), // eye position
             vec3(0, 0, 10), // at position
             vec3(0, 0, 1) // up direction
         );
@@ -139,6 +139,7 @@ export class MainScene extends Scene {
         }
 
         this.human.draw(context, program_state, this.materials.snowflake);
+        this.snake.update(this.dt);
         this.snake.draw(context, program_state, this.materials.snowflake);
     }
 }

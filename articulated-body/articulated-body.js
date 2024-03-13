@@ -4,7 +4,13 @@ import { defs, tiny } from '../utils/common.js';
 const { vec3, vec4, color, Mat4, Shape, Material, Shader, Texture, Component } = tiny;
 
 const shapes = {
-    'sphere': new defs.Subdivision_Sphere( 5 ),
+    end_effector: new defs.Subdivision_Sphere( 5 ),
+};
+
+const materials = {
+    end_effector: new Material(new defs.Phong_Shader(), {
+        ambient: .2, diffusivity: 1, specularity:  1, color: color( 1,0,0,1 )
+    }),
 };
 
 export
@@ -92,10 +98,14 @@ class Articulated_Body_Base {
         return x;
     }
 
-    get_end_effector_position() {
-        // in this example, we only have one end effector.
+    update_matrices() {
         this.matrix_stack = [];
         this._rec_update(this.root, Mat4.identity());
+    }
+
+    get_end_effector_position() {
+        // in this example, we only have one end effector.
+        this.update_matrices();
         const v = this.end_effector.global_position; // vec4
         return vec3(v[0], v[1], v[2]);
     }
@@ -105,6 +115,7 @@ class Articulated_Body_Base {
             const L = arc.location_matrix;
             const A = arc.articulation_matrix;
             matrix.post_multiply(L.times(A));
+            arc.global_matrix = matrix.copy();
             this.matrix_stack.push(matrix.copy());
 
             if (arc.end_effector !== null) {
@@ -140,6 +151,13 @@ class Articulated_Body_Base {
             const T = node.transform_matrix;
             matrix.post_multiply(T);
             node.shape.draw(webgl_manager, uniforms, matrix, material);
+
+            if (arc.end_effector !== null) {
+                // Draw the end effector as a dot
+                let v = matrix.times(arc.end_effector.local_position);
+                let transform = Mat4.translation(v[0], v[1], v[2]).times(Mat4.scale(0.1, 0.1, 0.1));
+                shapes.end_effector.draw(webgl_manager, uniforms, transform, materials.end_effector);
+            }
 
             matrix = this.matrix_stack.pop();
             for (const next_arc of node.children_arcs) {
@@ -230,6 +248,7 @@ class Arc {
             Ry: false,
             Rz: false,
         }
+        this.global_matrix = null;
     }
 
     // Here I only implement rotational DOF
@@ -256,6 +275,10 @@ class Arc {
         }
         if (this.dof.Rz) {
             this.articulation_matrix.pre_multiply(Mat4.rotation(theta[index], 0, 0, 1));
+            index += 1;
+        }
+        if (index !== theta.length) {
+            throw new Error("theta does not match the number of DOF");
         }
     }
 }
