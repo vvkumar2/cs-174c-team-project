@@ -19,35 +19,41 @@
             url("https://db.onlinewebfonts.com/t/044ff3aa766061f99fbbd171fb682d8c.svg#Game Over Regular")format("svg");
         }
 
-        .horizontal-center-container {
+        /* New styles for home menu */
+        .home-menu {
             position: absolute;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 2; /* Ensures it appears above the canvas */
-            left: 0;
-            right: 0;
+            top: 25%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #ffffff;
         }
 
-        .final-score {
-            font-size: 65px;
+        .home-menu h1 {
+            font-size: 150px;
             font-family: 'Game Over Regular';
-            text-shadow: -.7px -.7px 0 #ffffff, .7px -.7px 0 #ffffff, -.7px .7px 0 #ffffff, .7px .7px 0 #ffffff;
+            color: #ffffff;
+            text-shadow: -1px -1px 0 #000000, 1px -1px 0 #000000, -1px 1px 0 #000000, 1px 1px 0 #000000;
         }
 
-        .game-over-text {
-            font-size: 180px;
+        .home-menu button {
+            margin-top: 20px;
+            padding: 10px 20px;
             font-family: 'Game Over Regular';
-            text-shadow: -1px -1px 0 #ffffff, 1px -1px 0 #ffffff, -1px 1px 0 #ffffff, 1px 1px 0 #ffffff;
+            font-size: 60px;
+            background-color: #ffcc00;
+            color: #000000;
+            border: none;
+            cursor: pointer;
         }
 
-        .retry-button {
-            margin-top: 50px;
-            font-size: 80px;
-            font-family: 'Game Over Regular';
-            text-shadow: -.7px -.7px 0 #ffffff, .7px -.7px 0 #ffffff, -.7px .7px 0 #ffffff, .7px .7px 0 #ffffff;
+        /* Set the background of the body to black */
+        body {
+            background-color: black;
+            margin: 0; /* Remove default margin */
+            overflow: hidden; /* Hide scrollbars */
         }
+
     </style>
 </head>
 <body style="background: White">
@@ -65,6 +71,12 @@
         <div class="retry-button" id="retry-button">Press "g" To Retry</div>
     </div>
 </div>
+
+<!-- New home menu screen -->
+<div class="home-menu" id="home-menu">
+    <h1>Into the Unknown</h1>
+    <button id="start-button">Start Exploring</button>
+</div>
     
     
 <script type=module>
@@ -76,6 +88,14 @@
     const scenes = [Main_Scene, ...Additional_Scenes].map(scene => new scene());
     // This line creates your scene.
     new Canvas_Widget(element_to_replace, scenes);
+
+    // Add event listener to start button to hide the home menu and start the game
+    const startButton = document.getElementById('start-button');
+    startButton.addEventListener('click', () => {
+        document.getElementById('home-menu').style.display = 'none'; // Hide the home menu
+        // Add any additional logic to start your game here
+    });
+
 </script>
 
 </body>
