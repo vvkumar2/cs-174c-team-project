@@ -17,14 +17,17 @@ class Articulated_Snake extends Articulated_Body_Base {
         let nodes = [];
         let arcs = [];
 
-        const width = 0.2;
+        const tail_width = 0.05;
+        const bulge_width = 0.3;
+        const head_width = 0.15;
+        const width_bulge_location = 0.75;
         const node_length = 0.4;
-        const num_nodes = 40;
+        const num_nodes = 50;
+        const width_bulge_index = Math.floor(num_nodes * width_bulge_location);
 
-        const node_transform = Mat4.scale(node_length, width, width);
         const body_location = Mat4.translation(node_length, 0, 0);
         // head node
-        const head_node = new Node("head", sphere_shape, material, node_transform.copy());
+        const head_node = new Node("head", sphere_shape, material, Mat4.scale(node_length, tail_width, tail_width));
         // root->head
         const root_location = Mat4.translation(0, 1, 0);
         const root = new Arc("root", null, head_node, root_location);
@@ -38,7 +41,12 @@ class Articulated_Snake extends Articulated_Body_Base {
         let prev_arc = root;
         for (let i = 0; i < num_nodes - 1; i++) {
             const name = "body" + i;
-            const body_node = new Node(name, sphere_shape, material, node_transform.copy());
+            const width = (i <= width_bulge_index) ? (
+                 tail_width + (bulge_width - tail_width) * i / width_bulge_index
+            ) : (
+                bulge_width + (head_width - bulge_width) * (i - width_bulge_index) / (num_nodes - width_bulge_index)
+            );
+            const body_node = new Node(name, sphere_shape, material, Mat4.scale(node_length, width, width));
             const body = new Arc(name, prev_node, body_node, body_location.copy());
             body.set_dof(false, true, false);
             prev_node = body_node;
@@ -53,14 +61,15 @@ class Articulated_Snake extends Articulated_Body_Base {
         prev_arc.end_effector = end_effector_body;
         
         super(root, nodes, arcs, end_effector_body);
-        this.width = width;
+        this.min_width = tail_width;
+        this.max_width = bulge_width;
         this.node_length = node_length;
         this.num_nodes  = num_nodes;
         this.fixed_arc = this.arcs[Math.floor(this.num_nodes * 0.5)];
         this.u = 0; 
         this.curve_speed = 2;
         this.start_curviness = 0.6;
-        this.end_curviness = 1.5;
+        this.end_curviness = 1.8;
     }
 
     update(dt) {
