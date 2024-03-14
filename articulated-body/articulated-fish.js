@@ -14,11 +14,10 @@ const shapes = {
 export
 const Articulated_Fish = 
 class Articulated_Fish extends Articulated_Body_Base {
-    constructor(body_material, eye_material) {
+    constructor(body_material, eye_material, size=0.5) {
         let nodes = [];
         let arcs = [];
 
-        const size = 3.0;
         const length = 1.0 * size;
         const height = 0.5 * size;
         const width = 0.2 * size;
@@ -114,17 +113,22 @@ class Articulated_Fish extends Articulated_Body_Base {
         this.width = width;
         this.length = length;
         this.num_tail_fins = num_tail_fins;
+        this.animation_speed = 1;
         this.body_u = 0;
         this.fin_u = 0;
         this.body_wiggle_speed = 5;
         this.body_wiggle_size = 0.3;
         this.fin_wiggle_speed = 10;
-        this.fin_wiggle_size = 0.7;
+        this.fin_wiggle_size = 0.9;
+    }
+
+    set_animation_speed(speed) {
+        this.animation_speed = speed;
     }
 
     update(dt) {
-        this.body_u = (this.body_u + this.body_wiggle_speed * dt) % (2 * Math.PI);
-        this.fin_u = (this.fin_u + this.fin_wiggle_speed * dt) % (2 * Math.PI);
+        this.body_u = (this.body_u + this.animation_speed * this.body_wiggle_speed * dt) % (2 * Math.PI);
+        this.fin_u = (this.fin_u + this.animation_speed * this.fin_wiggle_speed * dt) % (2 * Math.PI);
         const body_theta = Math.sin(this.body_u) * this.body_wiggle_size;
         const fin_theta = Math.sin(this.fin_u) * this.fin_wiggle_size;
         this.arcs[0].update_articulation([body_theta]);

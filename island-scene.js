@@ -1,10 +1,11 @@
 import { Articulated_Human } from './articulated-body/human.js';
 import { Articulated_Snake } from './articulated-body/snake.js';
-import { Articulated_Fish } from './articulated-body/fish.js';
 import { defs, tiny } from './utils/common.js';
 import { Shape_From_File } from './utils/helper.js';
 import { WeatherParticleSystem } from './weather-particle-system.js';
 import { Tree } from './tree.js';
+import { Fish, FishSchool } from './animals/fish.js';
+import { random_island_pos } from './helpers.js';
 
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene, Texture
@@ -69,7 +70,11 @@ export class MainScene extends Scene {
 
         this.human = new Articulated_Human(this.materials.snowflake);
         this.snake = new Articulated_Snake(this.materials.snake);
-        this.fish = new Articulated_Fish(this.materials.fish, this.materials.fish_eye);
+        const num_fish_schools = 4;
+        this.fish_schools = []
+        for (let i = 0; i < num_fish_schools; i++) {
+            this.fish_schools.push(new FishSchool(random_island_pos(5), this.materials.fish, this.materials.fish_eye));
+        }
 
         this.tree = new Tree(this.materials.trunk_material, this.materials.foliage_material);
 
@@ -157,8 +162,10 @@ export class MainScene extends Scene {
         this.human.draw(context, program_state);
         this.snake.update(this.dt);
         this.snake.draw(context, program_state);
-        this.fish.update(this.dt);
-        this.fish.draw(context, program_state);
+        for (let i = 0; i < this.fish_schools.length; i++) {
+            this.fish_schools[i].update(this.dt);
+            this.fish_schools[i].draw(context, program_state);
+        }
 
         // Draw the tree
         this.tree.draw(context, program_state, Mat4.translation(-10, 3, 2));

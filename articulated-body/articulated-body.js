@@ -37,6 +37,10 @@ class Articulated_Body_Base {
         this.inverse_kinematics_speed = 1;
     }
 
+    set_location(location_matrix) {
+        this.root.location_matrix = location_matrix;
+    }
+
     // mapping from global theta to each joint theta
     apply_theta() {
         // for each node, feed exactly the right amount of theta
