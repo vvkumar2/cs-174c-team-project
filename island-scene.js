@@ -63,7 +63,7 @@ export class MainScene extends Scene {
 
         // Initial camera location
         this.initial_camera_location = Mat4.look_at(
-            vec3(0, 8, -20), // eye position
+            vec3(0, 6, -20), // eye position
             vec3(0, 0, 10), // at position
             vec3(0, 0, 1) // up direction
         );
@@ -77,6 +77,8 @@ export class MainScene extends Scene {
         }
 
         this.tree = new Tree(this.materials.trunk_material, this.materials.foliage_material);
+
+        this.minCameraHeight = 6; // Define the minimum height of the camera above the island
 
     }   
 
@@ -94,9 +96,11 @@ export class MainScene extends Scene {
         this.key_triggered_button("Jump", ["s"], () => {
             null;
         });
+        /*
         this.key_triggered_button("Restart", ["r"], () => {
             null;
         });
+        */
         this.key_triggered_button("Rain/Snow", ["t"], () => {
             if (this.isRaining) {
                 this.isRaining = false;
@@ -115,6 +119,11 @@ export class MainScene extends Scene {
         });
     }
 
+    checkCameraConstraints(cameraPosition) {
+        // Constrain the camera's height
+        cameraPosition[1] = Math.max(cameraPosition[1], this.minCameraHeight);
+        return cameraPosition; // Return the constrained camera position
+    }
 
     display(context, program_state) {
         // Store context
@@ -144,6 +153,7 @@ export class MainScene extends Scene {
         // Draw the island and rotate it by 90 degrees
         let island_transform = Mat4.rotation(Math.PI / 2, 1, 0, 0).times(Mat4.scale(200, 200, 1));
         this.shapes.island.draw(context, program_state, island_transform, this.materials.island);
+
         // Draw the water
         let water_transform = Mat4.translation(0, -5, -1).times(Mat4.scale(10000, 1, 10000));
         this.shapes.water.draw(context, program_state, water_transform, this.materials.water);
@@ -186,6 +196,27 @@ export class MainScene extends Scene {
         // Draw multiple trees
         
         this.tree.drawMultiple(context, program_state, treePositions);
+
+        // Check for camera constraints before setting the camera position
+        let constrainedCameraPosition = this.checkCameraConstraints(program_state.camera_transform.times(vec4(0, 0, 0, 1)).to3());
+
+        // Calculate the direction vector
+        let direction = vec3(0, 0, 10); // Direction the camera is looking
+        let upVector = vec3(0, 1, 0); // Up vector
+
+        // Check if the direction vector is parallel to the up vector
+        if (Math.abs(direction.normalized().dot(upVector.normalized())) > 0.999) {
+            // Adjust the up vector to avoid parallelism
+            upVector = vec3(0, 0, 1);
+        }
+
+        program_state.set_camera(Mat4.look_at(
+            constrainedCameraPosition, // Updated eye position
+            constrainedCameraPosition.plus(direction), // Updated at position
+            upVector // Updated up direction
+        ));
+
+
     }
 }
 
