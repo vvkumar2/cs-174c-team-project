@@ -47,6 +47,15 @@
             cursor: pointer;
         }
 
+        #timer-display {
+            position: absolute;
+            top: 1%; /* Adjust the top position as needed */
+            right: 75%; /* Adjust the right position as needed */
+            font-family: 'Game Over Regular';
+            font-size: 60px;
+            color: rgb(255, 255, 255); /* Set the text color to white */
+        }
+
         /* Set the background of the body to black */
         body {
             background-color: black;
@@ -77,6 +86,10 @@
     <h1>Into the Unknown</h1>
     <button id="start-button">Start Exploring</button>
 </div>
+
+<div class="interface" id="timer-display">
+    <p>Time past: <span id="timer">0</span></p>
+</div>
     
     
 <script type=module>
@@ -89,11 +102,27 @@
     // This line creates your scene.
     new Canvas_Widget(element_to_replace, scenes);
 
+    let time = 0; // Initial time in seconds
+
+// Function to update the timer display every second
+function updateTimer() {
+    const timerElement = document.getElementById('timer');
+    timerElement.textContent = time;
+    time++;
+    if (time >= 1000) {
+        time = 0; // Reset time to 0 when 1000 seconds are reached
+    }
+}
+
+    let timerInterval; // Variable to store the interval ID
+
     // Add event listener to start button to hide the home menu and start the game
     const startButton = document.getElementById('start-button');
     startButton.addEventListener('click', () => {
         document.getElementById('home-menu').style.display = 'none'; // Hide the home menu
-        // Add any additional logic to start your game here
+        
+        timerInterval = setInterval(updateTimer, 1000); // Start the timer
+
     });
 
 </script>
