@@ -76,6 +76,8 @@ export class MainScene extends Scene {
             this.fish_schools.push(new FishSchool(random_island_pos(5), this.materials.fish, this.materials.fish_eye));
         }
 
+        this.usingKeyboardControls = false;
+
         this.tree = new Tree(this.materials.trunk_material, this.materials.foliage_material);
         this.treePositions = [];
 
@@ -86,22 +88,46 @@ export class MainScene extends Scene {
     // Controls
     make_control_panel() {
         this.key_triggered_button("Forward", ["w"], () => {
-            null;
+            this.usingKeyboardControls = true;
+        }, undefined, () => {
+            this.usingKeyboardControls = false;
         });
+
         this.key_triggered_button("Left", ["a"], () => {
-            null;
+            this.usingKeyboardControls = true;
+        }, undefined, () => {
+            this.usingKeyboardControls = false;
         });
+
         this.key_triggered_button("Right", ["d"], () => {
-            null;
+            this.usingKeyboardControls = true;
+        }, undefined, () => {
+            this.usingKeyboardControls = false;
         });
+
         this.key_triggered_button("Backward", ["s"], () => {
-            null;
+            this.usingKeyboardControls = true;
+        }, undefined, () => {
+            this.usingKeyboardControls = false;
         });
-        /*
+
+    
         this.key_triggered_button("Restart", ["r"], () => {
             null;
         });
-        */
+
+       this.key_triggered_button("Up", ["Space"], () => {
+            this.usingKeyboardControls = true;
+        }, undefined, () => {
+            this.usingKeyboardControls = false;
+        });
+
+        this.key_triggered_button("Down", ["z"], () => {
+            this.usingKeyboardControls = true;
+        }, undefined, () => {
+            this.usingKeyboardControls = false;
+        });
+
         this.key_triggered_button("Rain/Snow", ["t"], () => {
             if (this.isRaining) {
                 this.isRaining = false;
@@ -118,6 +144,12 @@ export class MainScene extends Scene {
                 this.context.clearColor(0.46, 0.73, 0.95, 1);
             }    
         });
+    }
+
+    checkCameraConstraints(cameraPosition) {
+        // Constrain the camera's height
+        cameraPosition[1] = Math.max(cameraPosition[1], this.minCameraHeight);
+        return cameraPosition; // Return the constrained camera position
     }
 
     addRandomTreePositions(count, radius) {
@@ -164,12 +196,6 @@ export class MainScene extends Scene {
         }
     }
 
-    checkCameraConstraints(cameraPosition) {
-        // Constrain the camera's height
-        cameraPosition[1] = Math.max(cameraPosition[1], this.minCameraHeight);
-        return cameraPosition; // Return the constrained camera position
-    }
-
     display(context, program_state) {
         // Store context
         if (!this.context) this.context = context.context;
@@ -181,6 +207,25 @@ export class MainScene extends Scene {
         }
         program_state.projection_transform = Mat4.perspective(
             Math.PI / 4, context.width / context.height, .1, 1000);
+
+        // Check for camera constraints before setting the camera position
+        if (this.usingKeyboardControls) {
+            let constrainedCameraPosition = this.checkCameraConstraints(program_state.camera_transform.times(vec4(0, 0, 0, 1)).to3());
+
+            let direction = vec3(0, 0, 10); // Direction the camera is looking
+            let upVector = vec3(0, 1, 0); // Up vector
+
+            if (Math.abs(direction.normalized().dot(upVector.normalized())) > 0.999) {
+                upVector = vec3(0, 0, 1);
+            }
+
+            program_state.set_camera(Mat4.look_at(
+                constrainedCameraPosition, // Updated eye position
+                constrainedCameraPosition.plus(direction), // Updated at position
+                upVector // Updated up direction
+            ));
+        }
+
 
         // Setup lighting
         let sun_position = vec4(500, 250, 600, 0);
@@ -214,7 +259,8 @@ export class MainScene extends Scene {
             this.weatherParticleSystem.draw(context, program_state, this.materials.snowflake, 0.1);
         }
 
-        this.human.draw(context, program_state);
+        /*this.human.draw(context, program_state);*/
+
         this.snake.update(this.dt);
         this.snake.draw(context, program_state);
         for (let i = 0; i < this.fish_schools.length; i++) {
