@@ -77,6 +77,7 @@ export class MainScene extends Scene {
         }
 
         this.tree = new Tree(this.materials.trunk_material, this.materials.foliage_material);
+        this.treePositions = [];
 
         this.minCameraHeight = 6; // Define the minimum height of the camera above the island
 
@@ -112,11 +113,55 @@ export class MainScene extends Scene {
             }
 
             if (this.isRaining || this.isSnowing) {
-                this.context.clearColor(0.09, 0.1, 0.30, 1.0);
+                this.context.clearColor(0.12, 0.15, 0.4, 1.0);
             } else {
                 this.context.clearColor(0.46, 0.73, 0.95, 1);
             }    
         });
+    }
+
+    addRandomTreePositions(count, radius) {
+        let attempts = 0;
+        for (let i = 0; i < count; i++) {
+            let tooClose;
+            do {
+                tooClose = false;
+                // Generate random angle between 0 and 2π radians
+                let angle = Math.random() * 2 * Math.PI;
+                // Generate random distance from center, up to the radius, with a buffer to avoid edge placement
+                let distance = Math.random() * (radius - 10);
+                // Calculate x and z positions
+                let x = Math.cos(angle) * distance;
+                let z = Math.sin(angle) * distance;
+                // Assume a constant y position as in your existing data
+                let y = 3;
+    
+                // Check if the new position is too close to existing trees
+                for (let pos of this.treePositions) {
+                    let dx = pos[0] - x;
+                    let dz = pos[2] - z;
+                    let distSquared = dx * dx + dz * dz;
+                    if (distSquared < 30 * 30) { // Square of the minimum distance for efficiency
+                        tooClose = true;
+                        break;
+                    }
+                }
+    
+                // If too close, increment attempts and possibly skip to avoid infinite loops
+                if (tooClose) {
+                    attempts++;
+                    if (attempts > 10) {
+                        console.log("Too many attempts, skipping to next tree.");
+                        break;
+                    }
+                    continue;
+                }
+    
+                // Add the new position if it's not too close to others
+                this.treePositions.push([x, y, z]);
+                attempts = 0; // Reset attempts for the next tree
+            } while (tooClose && attempts <= 10); // Make sure we don't get stuck in an infinite loop
+        }
     }
 
     checkCameraConstraints(cameraPosition) {
@@ -182,34 +227,11 @@ export class MainScene extends Scene {
 
         // Example positions for the trees
         
-        let treePositions = [
-            [-80, 3, 50],
-            [60, 3, -80],
-            [-30, 3, 90],
-            [40, 3, -70],
-            [-10, 3, 30],
-            [20, 3, 10],
-            [-50, 3, -60],
-            [30, 3, 0],
-            [-20, 3, -90],
-            [70, 3, 20],
-            [-90, 3, 80],
-            [50, 3, -90],
-            [-70, 3, 70],
-            [60, 3, -60],
-            [-80, 3, 40],
-            [30, 3, -20],
-            [-40, 3, -80],
-            [10, 3, -30],
-            [-60, 3, -40],
-            [80, 3, 10]
-        ];
-        
-        
-        
+        if (this.treePositions.length === 0) {
+            this.addRandomTreePositions(50, 150);
+        }
         // Draw multiple trees
-        
-        this.tree.drawMultiple(context, program_state, treePositions);
+        this.tree.drawMultiple(context, program_state, this.treePositions);
 
         // Check for camera constraints before setting the camera position
         let constrainedCameraPosition = this.checkCameraConstraints(program_state.camera_transform.times(vec4(0, 0, 0, 1)).to3());
@@ -229,8 +251,6 @@ export class MainScene extends Scene {
             constrainedCameraPosition.plus(direction), // Updated at position
             upVector // Updated up direction
         ));
-
-
     }
 }
 
