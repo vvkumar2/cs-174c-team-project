@@ -57,7 +57,7 @@ export class MainScene extends Scene {
       
             trunk_material: new Material(new defs.Textured_Phong(), {color: hex_color("#A52A2A"), ambient: 0.3, diffusivity: 0.5, specularity: 1.0, texture: new Texture("assets/textures/moon.png")}),
 
-            foliage_material: new Material(new defs.Textured_Phong(), {color: hex_color("#90EE90"), ambient: 0.4, diffusivity: 0.1, specularity: 1.0, texture: new Texture("assets/textures/foliage.png")}),
+            foliage_material: new Material(new defs.Textured_Phong(), {color: hex_color("#ADD8E6"), ambient: 0.6, diffusivity: 0.1, specularity: 1.0, texture: new Texture("assets/textures/foliage.png")}),
       
         };
 
@@ -76,17 +76,20 @@ export class MainScene extends Scene {
             this.fish_schools.push(new FishSchool(random_island_pos(5), this.materials.fish, this.materials.fish_eye));
         }
 
+        this.usingKeyboardControls = false;
+
         this.tree = new Tree(this.materials.trunk_material, this.materials.foliage_material);
         this.treePositions = [];
 
+        // Camera
         this.minCameraHeight = 6; // Define the minimum height of the camera above the island
-
         this.movementSpeed = 1; // Units per press
         this.rotationAngle = 2 * Math.PI / 180; // 5 degrees in radians
         this.camera_position = vec3(0, 6, -20); // Initial camera position
         this.camera_orientation = Mat4.look_at(vec3(0, 6, -20), vec3(0, 0, 10), vec3(0, 1, 0));
         this.camera_yaw = 0
 
+        // Jumping
         this.isJumping = false;
         this.jumpInitialVelocity = 10; // Initial upward velocity
         this.gravity = 9.8; // Gravity, pulling the camera back down
@@ -98,14 +101,10 @@ export class MainScene extends Scene {
     make_control_panel() {
         this.key_triggered_button("Move Forward", ["w"], () => {
             const forwardDirection = vec3(Math.sin(this.camera_yaw), 0, Math.cos(this.camera_yaw));
-
-        // Move the camera forward in the direction it is facing
-        // Multiplying by the movement speed to determine how far to move
-        this.camera_position = this.camera_position.plus(forwardDirection.times(this.movementSpeed));
+            this.camera_position = this.camera_position.plus(forwardDirection.times(this.movementSpeed));
         });
 
         this.key_triggered_button("Look Left", ["a"], () => {
-            // this.camera_orientation = this.camera_orientation.times(Mat4.rotation(this.rotationAngle, 0, 1, 0));
             this.camera_yaw += this.rotationAngle;
         });
 
@@ -116,7 +115,6 @@ export class MainScene extends Scene {
         });
     
         this.key_triggered_button("Look Right", ["d"], () => {
-            // this.camera_orientation = this.camera_orientation.times(Mat4.rotation(-this.rotationAngle, 0, 1, 0));
             this.camera_yaw -= this.rotationAngle;
         });
         
@@ -149,6 +147,12 @@ export class MainScene extends Scene {
                 this.context.clearColor(0.46, 0.73, 0.95, 1);
             }    
         });
+    }
+
+    checkCameraConstraints(cameraPosition) {
+        // Constrain the camera's height
+        cameraPosition[1] = Math.max(cameraPosition[1], this.minCameraHeight);
+        return cameraPosition; // Return the constrained camera position
     }
 
     addRandomTreePositions(count, radius) {
@@ -195,12 +199,6 @@ export class MainScene extends Scene {
         }
     }
 
-    checkCameraConstraints(cameraPosition) {
-        // Constrain the camera's height
-        cameraPosition[1] = Math.max(cameraPosition[1], this.minCameraHeight);
-        return cameraPosition; // Return the constrained camera position
-    }
-
     display(context, program_state) {
         // Store context
         if (!this.context) this.context = context.context;
@@ -212,6 +210,25 @@ export class MainScene extends Scene {
         }
         program_state.projection_transform = Mat4.perspective(
             Math.PI / 4, context.width / context.height, .1, 1000);
+
+        // Check for camera constraints before setting the camera position
+        if (this.usingKeyboardControls) {
+            let constrainedCameraPosition = this.checkCameraConstraints(program_state.camera_transform.times(vec4(0, 0, 0, 1)).to3());
+
+            let direction = vec3(0, 0, 10); // Direction the camera is looking
+            let upVector = vec3(0, 1, 0); // Up vector
+
+            if (Math.abs(direction.normalized().dot(upVector.normalized())) > 0.999) {
+                upVector = vec3(0, 0, 1);
+            }
+
+            program_state.set_camera(Mat4.look_at(
+                constrainedCameraPosition, // Updated eye position
+                constrainedCameraPosition.plus(direction), // Updated at position
+                upVector // Updated up direction
+            ));
+        }
+
 
         // Setup lighting
         let sun_position = vec4(500, 250, 600, 0);
@@ -244,7 +261,8 @@ export class MainScene extends Scene {
             this.weatherParticleSystem.draw(context, program_state, this.materials.snowflake, 0.1);
         }
 
-        this.human.draw(context, program_state);
+        /*this.human.draw(context, program_state);*/
+
         this.snake.update(this.dt);
         this.snake.draw(context, program_state);
         for (let i = 0; i < this.fish_schools.length; i++) {
