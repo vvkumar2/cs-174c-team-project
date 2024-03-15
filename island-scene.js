@@ -81,27 +81,58 @@ export class MainScene extends Scene {
 
         this.minCameraHeight = 6; // Define the minimum height of the camera above the island
 
+        this.movementSpeed = 1; // Units per press
+        this.rotationAngle = 2 * Math.PI / 180; // 5 degrees in radians
+        this.camera_position = vec3(0, 6, -20); // Initial camera position
+        this.camera_orientation = Mat4.look_at(vec3(0, 6, -20), vec3(0, 0, 10), vec3(0, 1, 0));
+        this.camera_yaw = 0
+
+        this.isJumping = false;
+        this.jumpInitialVelocity = 10; // Initial upward velocity
+        this.gravity = 9.8; // Gravity, pulling the camera back down
+        this.jumpVerticalOffset = 0; // Current vertical offset from the starting position
+        this.jumpTime = 0; // Time since the jump started
     }   
 
     // Controls
     make_control_panel() {
-        this.key_triggered_button("Forward", ["w"], () => {
-            null;
+        this.key_triggered_button("Move Forward", ["w"], () => {
+            const forwardDirection = vec3(Math.sin(this.camera_yaw), 0, Math.cos(this.camera_yaw));
+
+        // Move the camera forward in the direction it is facing
+        // Multiplying by the movement speed to determine how far to move
+        this.camera_position = this.camera_position.plus(forwardDirection.times(this.movementSpeed));
         });
-        this.key_triggered_button("Left", ["a"], () => {
-            null;
+
+        this.key_triggered_button("Look Left", ["a"], () => {
+            // this.camera_orientation = this.camera_orientation.times(Mat4.rotation(this.rotationAngle, 0, 1, 0));
+            this.camera_yaw += this.rotationAngle;
         });
-        this.key_triggered_button("Right", ["d"], () => {
-            null;
+
+        this.key_triggered_button("Move Backward", ["s"], () => {
+            const forward = this.camera_orientation.times(vec4(0, 0, 1, 0)).to3().normalized().times(-this.movementSpeed);
+            this.camera_position = this.camera_position.minus(forward);
+            this.camera_position[1] = 6;
         });
-        this.key_triggered_button("Backward", ["s"], () => {
-            null;
+    
+        this.key_triggered_button("Look Right", ["d"], () => {
+            // this.camera_orientation = this.camera_orientation.times(Mat4.rotation(-this.rotationAngle, 0, 1, 0));
+            this.camera_yaw -= this.rotationAngle;
         });
+        
+        this.key_triggered_button("Jump", [" "], () => {
+            if (!this.isJumping) { // Start the jump only if not already jumping
+                this.isJumping = true;
+                this.jumpTime = 0; // Reset the timer at the start of the jump
+            }
+        });
+    
         /*
         this.key_triggered_button("Restart", ["r"], () => {
             null;
         });
         */
+
         this.key_triggered_button("Rain/Snow", ["t"], () => {
             if (this.isRaining) {
                 this.isRaining = false;
@@ -176,8 +207,8 @@ export class MainScene extends Scene {
 
         // Setup program state
         if (!context.scratchpad.controls) {
-            this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
-            program_state.set_camera(this.initial_camera_location);
+            // this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
+            // program_state.set_camera(this.initial_camera_location);
         }
         program_state.projection_transform = Mat4.perspective(
             Math.PI / 4, context.width / context.height, .1, 1000);
@@ -203,7 +234,6 @@ export class MainScene extends Scene {
         let water_transform = Mat4.translation(0, -5, -1).times(Mat4.scale(10000, 1, 10000));
         this.shapes.water.draw(context, program_state, water_transform, this.materials.water);
 
-        console.log(this.isSnowing, this.isRaining)
         // Draw the rain
         if (this.isRaining) {
             this.weatherParticleSystem.update(this.shapes.raindropSphere, context, program_state, this.dt, -9.8);
@@ -228,29 +258,33 @@ export class MainScene extends Scene {
         // Example positions for the trees
         
         if (this.treePositions.length === 0) {
-            this.addRandomTreePositions(50, 150);
+            this.addRandomTreePositions(30, 150);
         }
         // Draw multiple trees
         this.tree.drawMultiple(context, program_state, this.treePositions);
 
-        // Check for camera constraints before setting the camera position
-        let constrainedCameraPosition = this.checkCameraConstraints(program_state.camera_transform.times(vec4(0, 0, 0, 1)).to3());
+        // Update the camera position
+        if (this.isJumping) {
+            // Update the jump time
+            this.jumpTime += this.dt;
 
-        // Calculate the direction vector
-        let direction = vec3(0, 0, 10); // Direction the camera is looking
-        let upVector = vec3(0, 1, 0); // Up vector
+            // Calculate the vertical position using the formula: y = v0*t - 0.5*g*t^2
+            this.jumpVerticalOffset = (this.jumpInitialVelocity * this.jumpTime) - (0.5 * this.gravity * this.jumpTime * this.jumpTime);
 
-        // Check if the direction vector is parallel to the up vector
-        if (Math.abs(direction.normalized().dot(upVector.normalized())) > 0.999) {
-            // Adjust the up vector to avoid parallelism
-            upVector = vec3(0, 0, 1);
+            // If the jumpVerticalOffset is back to 0 or less, the jump is over
+            if (this.jumpVerticalOffset <= 0) {
+                this.isJumping = false;
+                this.jumpVerticalOffset = 0;
+            }
         }
 
-        program_state.set_camera(Mat4.look_at(
-            constrainedCameraPosition, // Updated eye position
-            constrainedCameraPosition.plus(direction), // Updated at position
-            upVector // Updated up direction
-        ));
+        // Apply the jumpVerticalOffset to the camera position
+        const eye = this.camera_position.plus(vec3(0, this.jumpVerticalOffset, 0)); // Add the jumpVerticalOffset to the Y-axis
+        const forward = vec3(Math.sin(this.camera_yaw), 0, Math.cos(this.camera_yaw));
+        const at = eye.plus(forward);
+        const up = vec3(0, 1, 0);
+
+        program_state.set_camera(Mat4.look_at(eye, at, up));
     }
 }
 
