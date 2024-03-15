@@ -93,7 +93,7 @@ export class MainScene extends Scene {
         this.key_triggered_button("Right", ["d"], () => {
             null;
         });
-        this.key_triggered_button("Jump", ["s"], () => {
+        this.key_triggered_button("Backward", ["s"], () => {
             null;
         });
         /*
