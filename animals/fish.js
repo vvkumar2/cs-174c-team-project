@@ -126,7 +126,7 @@ export class FishSchool {
         }
     }
 
-    update(dt) {
+    update(dt, pond_center, pond_radius) {
         this.u = (this.u + this.distance_fluctuation_speed * dt) % (2 * Math.PI);
 
         // random walk
@@ -142,6 +142,13 @@ export class FishSchool {
         // update the center
         this.velocity = this.velocity.plus(this.acceleration.times(dt));
         this.position = this.position.plus(this.velocity.times(dt));
+
+        // bounce off the walls
+        const distance_from_center = this.position.minus(pond_center).norm();
+        if (distance_from_center > pond_radius) {
+            this.velocity = this.velocity.times(-1);
+            this.drift = this.drift.times(-1);
+        }
 
         // fish are attracted to each other
         const attraction = 3;

@@ -26,6 +26,8 @@ export class MainScene extends Scene {
             raindropSphere: new defs.Subdivision_Sphere(4),
             snowflakeSphere: new defs.Subdivision_Sphere(1),
             sun: new defs.Subdivision_Sphere(4),
+            pond: new defs.Capped_Cylinder(50, 100),
+            plane: new defs.Cube(),
         };
 
         this.weatherParticleSystem = new WeatherParticleSystem();
@@ -37,9 +39,9 @@ export class MainScene extends Scene {
             // Existing materials
             ...this.materials,
             
-            island: new Material(new defs.Textured_Phong(1), {ambient: 0.8, diffusivity: 0.2, specularity: 0.3, texture: new Texture("assets/textures/grass-3.png")}),
+            island: new Material(new defs.Textured_Phong(1), {ambient: 0.8, diffusivity: 0.2, specularity: 0.3, texture: new Texture("assets/textures/grass-5.png")}),
             
-            water: new Material(new defs.Textured_Phong(1), {ambient: 0.9, diffusivity: 0.8, specularity: 0.8, texture: new Texture("assets/textures/water-3.png")}),
+            water: new Material(new defs.Textured_Phong(1), {ambient: 0.9, diffusivity: 0.8, specularity: 0.8, texture: new Texture("assets/textures/water-4.png")}),
             
             sun: new Material(new defs.Textured_Phong(1), {color: hex_color("#e8a425"), ambient: 1.0, diffusivity: 0.7, specularity: 1.0, texture: new Texture("assets/textures/sun.png")}),
             
@@ -58,7 +60,8 @@ export class MainScene extends Scene {
             trunk_material: new Material(new defs.Textured_Phong(), {color: hex_color("#A52A2A"), ambient: 0.3, diffusivity: 0.5, specularity: 1.0, texture: new Texture("assets/textures/moon.png")}),
 
             foliage_material: new Material(new defs.Textured_Phong(), {color: hex_color("#ADD8E6"), ambient: 0.6, diffusivity: 0.1, specularity: 1.0, texture: new Texture("assets/textures/foliage.png")}),
-      
+
+            pondWaterTransparent: new Material(new defs.Phong_Shader(), { color: color(0.4, 0.7, 1, 0.6), ambient: 0.2, diffusivity: 0.8, specularity: 0.9, texture: new Texture("assets/textures/water-3.png") })
         };
 
         // Initial camera location
@@ -88,6 +91,7 @@ export class MainScene extends Scene {
         this.camera_position = vec3(0, 6, -20); // Initial camera position
         this.camera_orientation = Mat4.look_at(vec3(0, 6, -20), vec3(0, 0, 10), vec3(0, 1, 0));
         this.camera_yaw = 0
+        this.camera_pitch = 0
 
         // Jumping
         this.isJumping = false;
@@ -108,12 +112,17 @@ export class MainScene extends Scene {
             this.camera_yaw += this.rotationAngle;
         });
 
-        this.key_triggered_button("Move Backward", ["s"], () => {
-            const forward = this.camera_orientation.times(vec4(0, 0, 1, 0)).to3().normalized().times(-this.movementSpeed);
-            this.camera_position = this.camera_position.minus(forward);
-            this.camera_position[1] = 6;
+        this.key_triggered_button("Look Up", ["s"], () => {
+            this.camera_pitch += this.rotationAngle; // Increase pitch to look down
+            this.camera_pitch = Math.min(this.camera_pitch, Math.PI / 2 - 0.01); // Limit looking down
         });
     
+        this.key_triggered_button("Look Down", ["x"], () => {
+            this.camera_pitch -= this.rotationAngle; // Decrease pitch to look up
+            this.camera_pitch = Math.max(this.camera_pitch, -Math.PI / 2 + 0.01); // Limit looking up
+        });
+    
+
         this.key_triggered_button("Look Right", ["d"], () => {
             this.camera_yaw -= this.rotationAngle;
         });
@@ -149,12 +158,6 @@ export class MainScene extends Scene {
         });
     }
 
-    checkCameraConstraints(cameraPosition) {
-        // Constrain the camera's height
-        cameraPosition[1] = Math.max(cameraPosition[1], this.minCameraHeight);
-        return cameraPosition; // Return the constrained camera position
-    }
-
     addRandomTreePositions(count, radius) {
         let attempts = 0;
         for (let i = 0; i < count; i++) {
@@ -176,7 +179,8 @@ export class MainScene extends Scene {
                     let dx = pos[0] - x;
                     let dz = pos[2] - z;
                     let distSquared = dx * dx + dz * dz;
-                    if (distSquared < 30 * 30) { // Square of the minimum distance for efficiency
+                    let distanceFromPond = Math.sqrt((pos[0] + 68) ** 2 + (pos[2] - 110) ** 2);
+                    if (distSquared < 30 * 30 || distanceFromPond < 45) {
                         tooClose = true;
                         break;
                     }
@@ -229,7 +233,6 @@ export class MainScene extends Scene {
             ));
         }
 
-
         // Setup lighting
         let sun_position = vec4(500, 250, 600, 0);
         let brightness = (this.isRaining || this.isSnowing) ? 100 : 1000000;
@@ -244,7 +247,7 @@ export class MainScene extends Scene {
         this.t = program_state.animation_time / 1000, this.dt = program_state.animation_delta_time / 1000;
 
         // Draw the island and rotate it by 90 degrees
-        let island_transform = Mat4.rotation(Math.PI / 2, 1, 0, 0).times(Mat4.scale(200, 200, 1));
+        let island_transform = Mat4.rotation(Math.PI / 2, 1, 0, 0).times(Mat4.translation(0, 0, 10)).times(Mat4.scale(200, 200, 20));
         this.shapes.island.draw(context, program_state, island_transform, this.materials.island);
 
         // Draw the water
@@ -263,13 +266,6 @@ export class MainScene extends Scene {
 
         /*this.human.draw(context, program_state);*/
 
-        this.snake.update(this.dt);
-        this.snake.draw(context, program_state);
-        for (let i = 0; i < this.fish_schools.length; i++) {
-            this.fish_schools[i].update(this.dt);
-            this.fish_schools[i].draw(context, program_state);
-        }
-
         // Draw the tree
         this.tree.draw(context, program_state, Mat4.translation(-10, 3, 2));
 
@@ -285,7 +281,7 @@ export class MainScene extends Scene {
         if (this.isJumping) {
             // Update the jump time
             this.jumpTime += this.dt;
-
+34
             // Calculate the vertical position using the formula: y = v0*t - 0.5*g*t^2
             this.jumpVerticalOffset = (this.jumpInitialVelocity * this.jumpTime) - (0.5 * this.gravity * this.jumpTime * this.jumpTime);
 
@@ -297,12 +293,34 @@ export class MainScene extends Scene {
         }
 
         // Apply the jumpVerticalOffset to the camera position
-        const eye = this.camera_position.plus(vec3(0, this.jumpVerticalOffset, 0)); // Add the jumpVerticalOffset to the Y-axis
-        const forward = vec3(Math.sin(this.camera_yaw), 0, Math.cos(this.camera_yaw));
-        const at = eye.plus(forward);
-        const up = vec3(0, 1, 0);
-
+        let forward = vec3(
+            Math.sin(this.camera_yaw) * Math.cos(this.camera_pitch), // X component
+            Math.sin(this.camera_pitch), // Y component, affected by pitch
+            Math.cos(this.camera_yaw) * Math.cos(this.camera_pitch) // Z component
+        );
+    
+        const eye = this.camera_position.plus(vec3(0, this.jumpVerticalOffset, 0)); // Include jump offset if applicable
+        const at = eye.plus(forward); // Calculate the look-at point based on the forward vector
+        const up = vec3(0, 1, 0); // Up vector remains the same
+    
         program_state.set_camera(Mat4.look_at(eye, at, up));
+    
+
+        this.snake.update(this.dt);
+        this.snake.draw(context, program_state);
+        for (let i = 0; i < this.fish_schools.length; i++) {
+            this.fish_schools[i].update(this.dt, vec3(-68, 10, 110), 25);
+            this.fish_schools[i].draw(context, program_state);
+        }
+
+
+
+        this.shapes.pond.draw(context, program_state, Mat4.rotation(Math.PI / 2, 1, 0, 0).times(Mat4.translation(-68, 110, 10)).times(Mat4.scale(45, 40, 18)), this.materials.pondWaterTransparent);
+  
+        this.shapes.plane.draw(context, program_state, Mat4.translation(-30, -21, 110).times(Mat4.scale(1, 20, 35)), this.materials.snowflake);
+        this.shapes.plane.draw(context, program_state, Mat4.translation(-106, -21, 110).times(Mat4.scale(1, 20, 35)), this.materials.snowflake);
+        this.shapes.plane.draw(context, program_state, Mat4.rotation(Math.PI / 2, 1, 0, 0).times(Mat4.translation(-70, 75, 21)).times(Mat4.scale(40, 1, 20)), this.materials.snowflake);
+        this.shapes.plane.draw(context, program_state, Mat4.rotation(Math.PI / 2, 1, 0, 0).times(Mat4.translation(-70, 145 , 21)).times(Mat4.scale(40, 1, 20)), this.materials.snowflake);
     }
 }
 

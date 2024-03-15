@@ -9,10 +9,10 @@ const random_island_pos =
 function random_island_pos(height) {
     // random in circle of radius 200
     while (true) {
-        const x = 200 * (Math.random() - 0.5);
-        const z = 200 * (Math.random() - 0.5);
+        const x = 20 * (Math.random() - 0.5) - 75;
+        const z = 20 * (Math.random() - 0.5) + 105;
         if (x * x + z * z < 200 * 200) {
-            return vec3(x, height, z);
+            return vec3(x, -height, z);
         }
     }
 }
