@@ -6,7 +6,7 @@ import { WeatherParticleSystem } from './weather-particle-system.js';
 import { Tree } from './tree.js';
 import { Fish, FishSchool } from './animals/fish.js';
 import { Snake } from './animals/snake.js';
-import { random_island_pos } from './helpers.js';
+import { random_island_pos, random_pond_pos } from './helpers.js';
 
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene, Texture
@@ -88,7 +88,7 @@ export class MainScene extends Scene {
         const num_fish_schools = 10;
         this.fish_schools = []
         for (let i = 0; i < num_fish_schools; i++) {
-            this.fish_schools.push(new FishSchool(random_island_pos(5), this.materials.fish, this.materials.fish_eye));
+            this.fish_schools.push(new FishSchool(random_pond_pos(5), this.materials.fish, this.materials.fish_eye));
         }
 
         this.usingKeyboardControls = false;
@@ -99,14 +99,19 @@ export class MainScene extends Scene {
         // movement
         this.movingForward = false;
         this.movingBackwards = false;
+        this.movingLeft = false;
+        this.movingRight = false;
         this.turningLeft = false;
         this.turningRight = false;
+        this.turningUp = false;
+        this.turningDown = false;
         this.rotateDir = 0;
 
         // Camera
         this.minCameraHeight = 6; // Define the minimum height of the camera above the island
         this.movementSpeed = 20; // Units per second, while pressing
-        this.rotationAngle = 1.0; // Degrees (in radians) per second, while pressing
+        this.rotationAngleUpDown = 1.0; // Degrees (in radians) per second, while pressing
+        this.rotationAngleLeftRight = 0.6;
         this.camera_position = vec3(0, 6, -20); // Initial camera position
         this.camera_orientation = Mat4.look_at(vec3(0, 6, -20), vec3(0, 0, 10), vec3(0, 1, 0));
         this.camera_yaw = 0
@@ -133,22 +138,46 @@ export class MainScene extends Scene {
             this.movingForward = false;
         });
 
-        this.key_triggered_button("Look Left", ["a"], () => {
-            this.turningLeft = true;
-        }, undefined, () => {
-            this.turningLeft = false;
-        });
-
         this.key_triggered_button("Move Backward", ["s"], () => {
             this.movingBackwards = true;
         }, undefined, () => {
             this.movingBackwards = false;
         });
+
+        this.key_triggered_button("Move Left", ["a"], () => {
+            this.movingLeft = true;
+        }, undefined, () => {
+            this.movingLeft = false;
+        });
+
+        this.key_triggered_button("Move Right", ["d"], () => {
+            this.movingRight = true;
+        }, undefined, () => {
+            this.movingRight = false;
+        });
+
+        this.key_triggered_button("Look Left", ["ArrowLeft"], () => {
+            this.turningLeft = true;
+        }, undefined, () => {
+            this.turningLeft = false;
+        });
     
-        this.key_triggered_button("Look Right", ["d"], () => {
+        this.key_triggered_button("Look Right", ["ArrowRight"], () => {
             this.turningRight = true;
         }, undefined, () => {
             this.turningRight = false;
+        });
+
+        this.key_triggered_button("Look Up", ["ArrowUp"], () => {
+            this.turningUp = true;
+        }, undefined, () => {
+            this.turningUp = false;
+        });
+    
+        this.key_triggered_button("Look Down", ["ArrowDown"], () => {
+            this.turningDown = true;
+        }, undefined, () => {
+            this.turningDown = false;
         });
         
         this.key_triggered_button("Jump", [" "], () => {
@@ -307,6 +336,12 @@ export class MainScene extends Scene {
         } else if (this.movingBackwards) {
             moveDir -= 1;
         }
+        let moveSidewaysDir = 0;
+        if (this.movingLeft) {
+            moveSidewaysDir += 1;
+        } else if (this.movingRight) {
+            moveSidewaysDir -= 1;
+        }
 
         let turnDir = 0;
         if (this.turningLeft) {
@@ -314,12 +349,23 @@ export class MainScene extends Scene {
         } else if (this.turningRight) {
             turnDir -= 1;
         }
+        let pitchDir = 0;
+        if (this.turningUp) {
+            pitchDir += 1;
+        } else if (this.turningDown) {
+            pitchDir -= 1;
+        }
 
         const forwardDirection = vec3(Math.sin(this.camera_yaw), 0, Math.cos(this.camera_yaw));
         const speed = this.movementSpeed * moveDir * this.dt;
         this.camera_position = this.camera_position.plus(forwardDirection.times(speed));
+        const sidewaysDirection = vec3(Math.cos(this.camera_yaw), 0, -Math.sin(this.camera_yaw));
+        const sidewaysSpeed = this.movementSpeed * moveSidewaysDir * this.dt;
+        this.camera_position = this.camera_position.plus(sidewaysDirection.times(sidewaysSpeed));
 
-        this.camera_yaw += this.rotationAngle * turnDir * this.dt;
+        this.camera_yaw += this.rotationAngleUpDown * turnDir * this.dt;
+        this.camera_pitch += this.rotationAngleLeftRight * pitchDir * this.dt;
+        this.camera_pitch = Math.min(this.camera_pitch, Math.PI / 2 - 0.01); // Limit looking down
         
         // Check for camera constraints before setting the camera position
         if (this.usingKeyboardControls) {

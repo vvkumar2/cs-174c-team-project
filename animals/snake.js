@@ -76,6 +76,13 @@ export class Snake {
         }
         this.position = this.position.plus(this.velocity.times(dt));
 
+        // bounce off edge of island
+        const distance_from_center = this.position.norm();
+        if (distance_from_center > 200) {
+            this.velocity = this.velocity.times(-1);
+            this.drift = this.drift.times(-1);
+        }
+
         this.sync_articulated_snake();
         this.articulated_snake.update(dt);
 
