@@ -416,17 +416,15 @@ export class MainScene extends Scene {
         // Movement
         let moveDir = 0;
         let moveSidewaysDir = 0;
-        if (!this.isJumping) {
-            if (this.movingForward && !this.detectCollisionWithTrees()) {
-                moveDir += 1;
-            } else if (this.movingBackwards) {
-                moveDir -= 1;
-            }
-            if (this.movingLeft) {
-                moveSidewaysDir += 1;
-            } else if (this.movingRight) {
-                moveSidewaysDir -= 1;
-            }
+        if (this.movingForward && !this.detectCollisionWithTrees()) {
+            moveDir += 1;
+        } else if (this.movingBackwards) {
+            moveDir -= 1;
+        }
+        if (this.movingLeft) {
+            moveSidewaysDir += 1;
+        } else if (this.movingRight) {
+            moveSidewaysDir -= 1;
         }
 
         let turnDir = 0;
@@ -451,7 +449,9 @@ export class MainScene extends Scene {
 
         this.camera_yaw += this.rotationAngleUpDown * turnDir * this.dt;
         this.camera_pitch += this.rotationAngleLeftRight * pitchDir * this.dt;
-        this.camera_pitch = Math.min(this.camera_pitch, Math.PI / 2 - 0.01); // Limit looking down
+        // clamp between -pi/2+epsilon and pi/2-epsilon
+        const epsilon = 0.1;
+        this.camera_pitch = Math.min(Math.PI/2-epsilon, Math.max(-Math.PI/2+epsilon, this.camera_pitch));
         
         // Check for camera constraints before setting the camera position
         if (this.usingKeyboardControls) {
