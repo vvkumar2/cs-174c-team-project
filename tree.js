@@ -20,7 +20,8 @@ export class Tree extends Shape {
     }
 
     // Method to draw the tree
-    draw(context, program_state, transform = Mat4.identity()) {
+    draw(context, program_state, position) {
+        const transform = Mat4.translation(position[0], position[1], position[2]);
         // Draw the trunk
         let trunk_transform = transform.times(Mat4.rotation(Math.PI / 2, 1, 0, 0)).times(Mat4.scale(0.5, 0.5, 7));
         this.trunk.draw(context, program_state, trunk_transform, this.trunk_material);
@@ -36,13 +37,6 @@ export class Tree extends Shape {
                                                .times(Mat4.scale(2, 2, 2));
             this.foliage[i].draw(context, program_state, foliage_transform, this.foliage_material);
             angle_offset += Math.PI / 3; // 60 degrees
-        }
-    }
- 
-    // Method to draw multiple trees
-    drawMultiple(context, program_state, positions) {
-        for (let position of positions) {
-            this.draw(context, program_state, Mat4.translation(...position));
         }
     }
 }

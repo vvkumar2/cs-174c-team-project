@@ -1,10 +1,11 @@
 import { Articulated_Human } from './articulated-body/human.js';
-import { Articulated_Snake } from './articulated-body/snake.js';
+import { Articulated_Snake } from './articulated-body/articulated-snake.js';
 import { defs, tiny } from './utils/common.js';
 import { Shape_From_File } from './utils/helper.js';
 import { WeatherParticleSystem } from './weather-particle-system.js';
 import { Tree } from './tree.js';
 import { Fish, FishSchool } from './animals/fish.js';
+import { Snake } from './animals/snake.js';
 import { random_island_pos } from './helpers.js';
 
 const {
@@ -51,7 +52,7 @@ export class MainScene extends Scene {
 
             snowflake: new Material(new defs.Phong_Shader(), {color: hex_color("#ffffff"), ambient: 0.9, diffusivity: 0.8, specularity: 1.0}),
 
-            snake: new Material(new defs.Fake_Bump_Map(), {ambient: 0.5, diffusivity: 1.0, specularity:1.0, texture: new Texture("assets/textures/snake.jpg")}),
+            snake: new Material(new defs.Fake_Bump_Map(), {ambient: 0.7, diffusivity: 1.0, specularity:1.0, texture: new Texture("assets/textures/snake.jpg")}),
 
             fish: new Material(new defs.Fake_Bump_Map(), {ambient: 0.5, diffusivity: 1.0, specularity: 1.0, texture: new Texture("assets/textures/fish.jpg")}),
             // fish_eye: new Material(new defs.Phong_Shader(), {color: hex_color("#000000"), ambient: 0.9, diffusivity: 0.8, specularity: 1.0}),
@@ -71,9 +72,20 @@ export class MainScene extends Scene {
             vec3(0, 0, 1) // up direction
         );
 
+        // distance at which entities are updated
+        this.entityUpdateDistance = 100;
+        this.veryCloseDistance = 20;
+        this.inViewBuffer = 0.1;
+        this.weatherParticleUpdateDistance = 150;
+        this.firstUpdate = true; // update everything on the first frame
         this.human = new Articulated_Human(this.materials.snowflake);
-        this.snake = new Articulated_Snake(this.materials.snake);
-        const num_fish_schools = 4;
+        this.num_snakes = 10;
+        this.snakes = []
+        for (let i = 0; i < this.num_snakes; i++) {
+            const articulated_snake = new Articulated_Snake(this.materials.snake);
+            this.snakes.push(new Snake(random_island_pos(1), articulated_snake));
+        }
+        const num_fish_schools = 10;
         this.fish_schools = []
         for (let i = 0; i < num_fish_schools; i++) {
             this.fish_schools.push(new FishSchool(random_island_pos(5), this.materials.fish, this.materials.fish_eye));
@@ -106,6 +118,11 @@ export class MainScene extends Scene {
         this.gravity = 30; // Gravity, pulling the camera back down
         this.jumpVerticalOffset = 0; // Current vertical offset from the starting position
         this.jumpTime = 0; // Time since the jump started
+
+        // FPS calc
+        this.target_fps = 30;
+        this.avg_dt_beta = 0.95;
+        this.avg_dt = 0;
     }   
 
     // Controls
@@ -151,10 +168,12 @@ export class MainScene extends Scene {
             if (this.isRaining) {
                 this.isRaining = false;
                 this.isSnowing = true;
+                this.weatherStartTime = this.t;
             } else if (this.isSnowing) {
                 this.isSnowing = false;
             } else {
                 this.isRaining = true;
+                this.weatherStartTime = this.t;
             }
 
             if (this.isRaining || this.isSnowing) {
@@ -204,15 +223,68 @@ export class MainScene extends Scene {
                 }
     
                 // Add the new position if it's not too close to others
-                this.treePositions.push([x, y, z]);
+                this.treePositions.push(vec3(x, y, z));
                 attempts = 0; // Reset attempts for the next tree
             } while (tooClose && attempts <= 10); // Make sure we don't get stuck in an infinite loop
         }
     }
 
+    isClose(pos, updateDistance) {
+        let delta = pos.minus(this.camera_position);
+        delta[1] = 0; // flatten the y-coords
+        return delta.norm() < updateDistance
+    }
+
+    isVeryClose(pos) {
+        return this.isClose(pos, this.veryCloseDistance)
+    }
+    
+    inView(pos, flatten) {
+        let delta = pos.minus(this.camera_eye);
+        let forward = this.camera_forward.copy();
+        if (flatten) {
+            delta[1] = 0; // flatten the y-coords
+            forward[1] = 0; // flatten the y-coords    
+        }
+        // determine if the position is in view of the camera
+        const cos_theta = (delta).dot(forward) / (forward.norm() * delta.norm());
+        const theta = Math.acos(cos_theta);
+        return theta < (1+this.inViewBuffer) * Math.max(this.fov_x, this.fov_y) / 2
+    }
+
+    shouldUpdate(pos) {
+        return this.firstUpdate || (this.isClose(pos, this.entityUpdateDistance) && this.inView(pos, false))
+            || this.isVeryClose(pos);
+    }
+    
+    shouldDraw(pos) {
+        // close objects might not have their center in view
+        // but should be drawn because they might still be in view
+        return this.inView(pos, true) || this.isVeryClose(pos)
+    }
+
+    shouldUpdateWeatherParticle(pos) {
+        const timeBuffer = 10;
+        const weatherJustStarted = (this.t - this.weatherStartTime) < timeBuffer;
+        return this.isClose(pos, this.weatherParticleUpdateDistance)
+    }
+
+    shouldDrawWeatherParticle(pos) {
+        return this.isClose(pos, this.weatherParticleUpdateDistance) && this.inView(pos, true)
+    }
+
     display(context, program_state) {
         // Update time
         this.t = program_state.animation_time / 1000, this.dt = program_state.animation_delta_time / 1000;
+        
+        // FPS calculation
+        if (this.firstUpdate) {
+            this.avg_dt = this.dt;
+        }
+        this.avg_dt = this.avg_dt_beta * this.avg_dt + (1 - this.avg_dt_beta) * this.dt;
+        const fps = 1 / this.avg_dt;
+        const fpsElement = document.getElementById('fps');
+        fpsElement.textContent = fps.toFixed(0);
 
         // Store context
         if (!this.context) this.context = context.context;
@@ -222,8 +294,11 @@ export class MainScene extends Scene {
             // this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
             // program_state.set_camera(this.initial_camera_location);
         }
+        this.fov_y = Math.PI / 4;
+        this.aspect = context.width / context.height;
+        this.fov_x = this.fov_y * this.aspect;
         program_state.projection_transform = Mat4.perspective(
-            Math.PI / 4, context.width / context.height, .1, 1000);
+            this.fov_y, this.aspect, .1, 1000);
 
         // Movement
         let moveDir = 0;
@@ -264,6 +339,33 @@ export class MainScene extends Scene {
             ));
         }
 
+        // Update the camera position
+        if (this.isJumping) {
+            // Update the jump time
+            this.jumpTime += this.dt;
+
+            // Calculate the vertical position using the formula: y = v0*t - 0.5*g*t^2
+            this.jumpVerticalOffset = (this.jumpInitialVelocity * this.jumpTime) - (0.5 * this.gravity * this.jumpTime * this.jumpTime);
+
+            // If the jumpVerticalOffset is back to 0 or less, the jump is over
+            if (this.jumpVerticalOffset <= 0) {
+                this.isJumping = false;
+                this.jumpVerticalOffset = 0;
+            }
+        }
+
+        // Apply the jumpVerticalOffset to the camera position
+        this.camera_eye = this.camera_position.plus(vec3(0, this.jumpVerticalOffset, 0)); // Add the jumpVerticalOffset to the Y-axis
+        this.camera_forward = vec3(
+            Math.sin(this.camera_yaw) * Math.cos(this.camera_pitch), // X component
+            Math.sin(this.camera_pitch), // Y component, affected by pitch
+            Math.cos(this.camera_yaw) * Math.cos(this.camera_pitch) // Z component
+        );
+        const at = this.camera_eye.plus(this.camera_forward);
+        const up = vec3(0, 1, 0);
+
+        program_state.set_camera(Mat4.look_at(this.camera_eye, at, up));
+
         // Setup lighting
         let sun_position = vec4(500, 250, 600, 0);
         let brightness = (this.isRaining || this.isSnowing) ? 100 : 1000000;
@@ -284,71 +386,49 @@ export class MainScene extends Scene {
 
         // Draw the rain
         if (this.isRaining) {
-            this.weatherParticleSystem.update(this.shapes.raindropSphere, context, program_state, this.dt, -9.8);
-            this.weatherParticleSystem.draw(context, program_state, this.materials.raindrop, 0.2);
+            this.weatherParticleSystem.update(this.shapes.raindropSphere, context, program_state, this.dt, -9.8, (pos) => this.shouldUpdateWeatherParticle(pos));
+            this.weatherParticleSystem.draw(context, program_state, this.materials.raindrop, 0.2, (pos) => this.shouldDrawWeatherParticle(pos));
         }
         else if (this.isSnowing) {
-            this.weatherParticleSystem.update(this.shapes.snowflakeSphere, context, program_state, this.dt, -5);
-            this.weatherParticleSystem.draw(context, program_state, this.materials.snowflake, 0.1);
+            this.weatherParticleSystem.update(this.shapes.snowflakeSphere, context, program_state, this.dt, -5, (pos) => this.shouldUpdateWeatherParticle(pos));
+            this.weatherParticleSystem.draw(context, program_state, this.materials.snowflake, 0.1, (pos) => this.shouldDrawWeatherParticle(pos));
         }
 
         /*this.human.draw(context, program_state);*/
 
-        // Draw the tree
-        this.tree.draw(context, program_state, Mat4.translation(-10, 3, 2));
+        for (let i = 0; i < this.snakes.length; i++) {
+            if (this.shouldUpdate(this.snakes[i].getPosition())) {
+                this.snakes[i].update(this.dt);
+            }
+            if (this.shouldDraw(this.snakes[i].getPosition())) {
+                this.snakes[i].draw(context, program_state);
+            }
+        }
+        for (let i = 0; i < this.fish_schools.length; i++) {
+            if (this.shouldUpdate(this.fish_schools[i].position)) {
+                this.fish_schools[i].update(this.dt, vec3(-68, 10, 110), 25);
+            }
+            if (this.shouldDraw(this.fish_schools[i].position)) {
+                this.fish_schools[i].draw(context, program_state);                
+            }
+        }
 
-        // Example positions for the trees
-        
         if (this.treePositions.length === 0) {
             this.addRandomTreePositions(30, 150);
         }
         // Draw multiple trees
-        this.tree.drawMultiple(context, program_state, this.treePositions);
-
-        // Update the camera position
-        if (this.isJumping) {
-            // Update the jump time
-            this.jumpTime += this.dt;
-34
-            // Calculate the vertical position using the formula: y = v0*t - 0.5*g*t^2
-            this.jumpVerticalOffset = (this.jumpInitialVelocity * this.jumpTime) - (0.5 * this.gravity * this.jumpTime * this.jumpTime);
-
-            // If the jumpVerticalOffset is back to 0 or less, the jump is over
-            if (this.jumpVerticalOffset <= 0) {
-                this.isJumping = false;
-                this.jumpVerticalOffset = 0;
+        for (const position of this.treePositions) {
+            if (this.shouldDraw(position)) {
+                this.tree.draw(context, program_state, position);
             }
         }
-
-        // Apply the jumpVerticalOffset to the camera position
-        let forward = vec3(
-            Math.sin(this.camera_yaw) * Math.cos(this.camera_pitch), // X component
-            Math.sin(this.camera_pitch), // Y component, affected by pitch
-            Math.cos(this.camera_yaw) * Math.cos(this.camera_pitch) // Z component
-        );
-    
-        const eye = this.camera_position.plus(vec3(0, this.jumpVerticalOffset, 0)); // Include jump offset if applicable
-        const at = eye.plus(forward); // Calculate the look-at point based on the forward vector
-        const up = vec3(0, 1, 0); // Up vector remains the same
-    
-        program_state.set_camera(Mat4.look_at(eye, at, up));
-    
-
-        this.snake.update(this.dt);
-        this.snake.draw(context, program_state);
-        for (let i = 0; i < this.fish_schools.length; i++) {
-            this.fish_schools[i].update(this.dt, vec3(-68, 10, 110), 25);
-            this.fish_schools[i].draw(context, program_state);
-        }
-
-
-
         this.shapes.pond.draw(context, program_state, Mat4.rotation(Math.PI / 2, 1, 0, 0).times(Mat4.translation(-68, 110, 10)).times(Mat4.scale(45, 40, 18)), this.materials.pondWaterTransparent);
-  
         this.shapes.plane.draw(context, program_state, Mat4.translation(-30, -21, 110).times(Mat4.scale(1, 20, 35)), this.materials.snowflake);
         this.shapes.plane.draw(context, program_state, Mat4.translation(-106, -21, 110).times(Mat4.scale(1, 20, 35)), this.materials.snowflake);
         this.shapes.plane.draw(context, program_state, Mat4.rotation(Math.PI / 2, 1, 0, 0).times(Mat4.translation(-70, 75, 21)).times(Mat4.scale(40, 1, 20)), this.materials.snowflake);
         this.shapes.plane.draw(context, program_state, Mat4.rotation(Math.PI / 2, 1, 0, 0).times(Mat4.translation(-70, 145 , 21)).times(Mat4.scale(40, 1, 20)), this.materials.snowflake);
+        
+        this.firstUpdate = false; // no longer the first frame
     }
 }
 

@@ -68,18 +68,32 @@ class Articulated_Snake extends Articulated_Body_Base {
         this.fixed_arc = this.arcs[Math.floor(this.num_nodes * 0.5)];
         this.u = 0; 
         this.curve_speed = 2;
+        this.animation_speed = 1;
+        this.curviness_factor = 1;
         this.start_curviness = 0.6;
         this.end_curviness = 1.8;
+
+        this.update_matrices();
+    }
+
+    getPosition() {
+        // get position of center node
+        const center_node = this.arcs[Math.floor(this.num_nodes * 0.5)];
+        return center_node.global_matrix.times(vec4(0, 0, 0, 1)).to3();
+    }
+
+    set_animation_speed(speed) {
+        this.animation_speed = speed;
     }
 
     update(dt) {
         // only one underlying parameter
-        this.u += this.curve_speed * dt;
+        this.u += this.curve_speed * this.animation_speed * dt;
         if (this.u > 2 * Math.PI) {
             this.u -= 2 * Math.PI;
         }
         for (let i = 1; i < this.arcs.length; i++) { 
-            const curviness = this.start_curviness + (this.end_curviness - this.start_curviness) * i / this.num_nodes;
+            const curviness = this.curviness_factor * this.start_curviness + (this.end_curviness - this.start_curviness) * i / this.num_nodes;
             const theta = curviness * Math.sin(i * this.node_length + this.u) * this.node_length;
             const arc = this.arcs[i]; 
             arc.update_articulation([theta]); 

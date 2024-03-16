@@ -95,7 +95,7 @@ export class Fish {
 export class FishSchool {
     constructor(position, body_material, eye_material) {
         const spread = 5;
-        const fish_count = 10;
+        const fish_count = 20;
         this.position = position;
         this.velocity = vec3(2, 0, 0);
         this.max_speed = 1.5;

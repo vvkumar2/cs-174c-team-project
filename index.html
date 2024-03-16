@@ -55,6 +55,15 @@
             color: rgb(0, 0, 0); /* Set the text color to white */
         }
 
+        #fps-display {
+            position: absolute;
+            top: -8px;
+            /* left: 50px; */
+            font-family: 'Game Over Regular';
+            font-size: 60px;
+            color: rgb(0, 0, 0); /* Set the text color to white */
+        }
+
         /* Set the background of the body to black */
         body {
             background-color: black;
@@ -75,6 +84,9 @@
     </div> -->
     <div class="interface" id="timer-display">
         <p>Time: <span id="timer">0</span></p>
+    </div>
+    <div class="interface" id="fps-display">
+        <p>FPS: <span id="fps"></span></p>
     </div>
     <div class="horizontal-center-container" id="game-over-screen" style="visibility: hidden; top: 200px;">
         <div class="game-over-text">Game Over</div>

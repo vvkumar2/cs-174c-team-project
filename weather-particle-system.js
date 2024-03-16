@@ -9,6 +9,7 @@ export class WeatherParticle {
         this.velocity = vec3(0, 0, 0); // Adjust as needed
         this.acceleration = vec3(0, acceleration, 0); // Gravity
         this.sphere = sharedSphere;
+        this.start_time = 0;
     }
 
     update(dt) {
@@ -29,9 +30,12 @@ export class WeatherParticleSystem {
         this.spawnRate = 140; // Adjust based on desired intensity
     }
 
-    spawnParticle(sphere, acceleration) {
+    spawnParticle(sphere, acceleration, shouldSpawn) {
         try {
-            this.particles.push(new WeatherParticle(vec3(Math.random() * 400 - 200, 75, Math.random() * 400 - 200), sphere, acceleration));
+            const pos = vec3(Math.random() * 400 - 200, 75, Math.random() * 400 - 200);
+            if (shouldSpawn(pos)) {
+                this.particles.push(new WeatherParticle(pos, sphere, acceleration));
+            }
         }
         catch (e) {
             console.log(e);
@@ -39,23 +43,29 @@ export class WeatherParticleSystem {
 
     }
 
-    update(sphere, context, program_state, dt, acceleration) {
+    update(sphere, context, program_state, dt, acceleration, shouldUpdate) {
         // Spawn new raindrops based on spawn rate and dt
         for (let i = 0; i < this.spawnRate; i++) {
-            this.spawnParticle(sphere, acceleration);
+            this.spawnParticle(sphere, acceleration, shouldUpdate);
         }
 
         // Update each raindrop
-        this.particles.forEach(particle => particle.update(dt));
+        for (const particle of this.particles) {
+            if (shouldUpdate(particle.position)) {
+                particle.update(dt);
+            }
+        }
 
         // Remove raindrops that have fallen below a certain height
         this.particles = this.particles.filter(particle => particle.position[1] > 0);
 
     }
 
-    draw(context, program_state, material, scale) {
+    draw(context, program_state, material, scale, shouldDraw) {
         for (let particle of this.particles) {
-            particle.draw(context, program_state, material, scale);
+            if (shouldDraw(particle.position)) {
+                particle.draw(context, program_state, material, scale);
+            }
         }
     }
 }
