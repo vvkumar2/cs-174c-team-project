@@ -145,7 +145,7 @@ export class FishSchool {
 
         // bounce off the walls
         const distance_from_center = this.position.minus(pond_center).norm();
-        if (distance_from_center > pond_radius) {
+        if (distance_from_center > pond_radius || this.position[1] > 0) {
             this.velocity = this.velocity.times(-1);
             this.drift = this.drift.times(-1);
         }

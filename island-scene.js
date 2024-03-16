@@ -84,10 +84,17 @@ export class MainScene extends Scene {
         this.tree = new Tree(this.materials.trunk_material, this.materials.foliage_material);
         this.treePositions = [];
 
+        // movement
+        this.movingForward = false;
+        this.movingBackwards = false;
+        this.turningLeft = false;
+        this.turningRight = false;
+        this.rotateDir = 0;
+
         // Camera
         this.minCameraHeight = 6; // Define the minimum height of the camera above the island
-        this.movementSpeed = 1; // Units per press
-        this.rotationAngle = 2 * Math.PI / 180; // 5 degrees in radians
+        this.movementSpeed = 20; // Units per second, while pressing
+        this.rotationAngle = 1.0; // Degrees (in radians) per second, while pressing
         this.camera_position = vec3(0, 6, -20); // Initial camera position
         this.camera_orientation = Mat4.look_at(vec3(0, 6, -20), vec3(0, 0, 10), vec3(0, 1, 0));
         this.camera_yaw = 0
@@ -95,8 +102,8 @@ export class MainScene extends Scene {
 
         // Jumping
         this.isJumping = false;
-        this.jumpInitialVelocity = 10; // Initial upward velocity
-        this.gravity = 9.8; // Gravity, pulling the camera back down
+        this.jumpInitialVelocity = 18; // Initial upward velocity
+        this.gravity = 30; // Gravity, pulling the camera back down
         this.jumpVerticalOffset = 0; // Current vertical offset from the starting position
         this.jumpTime = 0; // Time since the jump started
     }   
@@ -104,27 +111,27 @@ export class MainScene extends Scene {
     // Controls
     make_control_panel() {
         this.key_triggered_button("Move Forward", ["w"], () => {
-            const forwardDirection = vec3(Math.sin(this.camera_yaw), 0, Math.cos(this.camera_yaw));
-            this.camera_position = this.camera_position.plus(forwardDirection.times(this.movementSpeed));
+            this.movingForward = true;
+        }, undefined, () => {
+            this.movingForward = false;
         });
 
         this.key_triggered_button("Look Left", ["a"], () => {
-            this.camera_yaw += this.rotationAngle;
+            this.turningLeft = true;
+        }, undefined, () => {
+            this.turningLeft = false;
         });
 
-        this.key_triggered_button("Look Up", ["s"], () => {
-            this.camera_pitch += this.rotationAngle; // Increase pitch to look down
-            this.camera_pitch = Math.min(this.camera_pitch, Math.PI / 2 - 0.01); // Limit looking down
+        this.key_triggered_button("Move Backward", ["s"], () => {
+            this.movingBackwards = true;
+        }, undefined, () => {
+            this.movingBackwards = false;
         });
     
-        this.key_triggered_button("Look Down", ["x"], () => {
-            this.camera_pitch -= this.rotationAngle; // Decrease pitch to look up
-            this.camera_pitch = Math.max(this.camera_pitch, -Math.PI / 2 + 0.01); // Limit looking up
-        });
-    
-
         this.key_triggered_button("Look Right", ["d"], () => {
-            this.camera_yaw -= this.rotationAngle;
+            this.turningRight = true;
+        }, undefined, () => {
+            this.turningRight = false;
         });
         
         this.key_triggered_button("Jump", [" "], () => {
@@ -204,6 +211,9 @@ export class MainScene extends Scene {
     }
 
     display(context, program_state) {
+        // Update time
+        this.t = program_state.animation_time / 1000, this.dt = program_state.animation_delta_time / 1000;
+
         // Store context
         if (!this.context) this.context = context.context;
 
@@ -215,6 +225,27 @@ export class MainScene extends Scene {
         program_state.projection_transform = Mat4.perspective(
             Math.PI / 4, context.width / context.height, .1, 1000);
 
+        // Movement
+        let moveDir = 0;
+        if (this.movingForward) {
+            moveDir += 1;
+        } else if (this.movingBackwards) {
+            moveDir -= 1;
+        }
+
+        let turnDir = 0;
+        if (this.turningLeft) {
+            turnDir += 1;
+        } else if (this.turningRight) {
+            turnDir -= 1;
+        }
+
+        const forwardDirection = vec3(Math.sin(this.camera_yaw), 0, Math.cos(this.camera_yaw));
+        const speed = this.movementSpeed * moveDir * this.dt;
+        this.camera_position = this.camera_position.plus(forwardDirection.times(speed));
+
+        this.camera_yaw += this.rotationAngle * turnDir * this.dt;
+        
         // Check for camera constraints before setting the camera position
         if (this.usingKeyboardControls) {
             let constrainedCameraPosition = this.checkCameraConstraints(program_state.camera_transform.times(vec4(0, 0, 0, 1)).to3());
@@ -242,9 +273,6 @@ export class MainScene extends Scene {
         let sun_transform = Mat4.translation(500, 250, 600).times(Mat4.scale(40, 40, 40));
         let material = (this.isRaining || this.isSnowing) ? this.materials.moon : this.materials.sun;
         this.shapes.sun.draw(context, program_state, sun_transform, material);
-
-        // Update time
-        this.t = program_state.animation_time / 1000, this.dt = program_state.animation_delta_time / 1000;
 
         // Draw the island and rotate it by 90 degrees
         let island_transform = Mat4.rotation(Math.PI / 2, 1, 0, 0).times(Mat4.translation(0, 0, 10)).times(Mat4.scale(200, 200, 20));
