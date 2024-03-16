@@ -14,7 +14,7 @@ const shapes = {
 export
 const Articulated_Fish = 
 class Articulated_Fish extends Articulated_Body_Base {
-    constructor(body_material, eye_material, size=0.5) {
+    constructor(body_material, eye_material, size) {
         let nodes = [];
         let arcs = [];
 

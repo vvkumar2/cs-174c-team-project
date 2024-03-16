@@ -93,9 +93,10 @@ export class Fish {
 }
 
 export class FishSchool {
-    constructor(position, body_material, eye_material) {
+    constructor(position, pond, fish_count, fish_size, body_material, eye_material) {
+        this.pond = pond;
+        
         const spread = 5;
-        const fish_count = 20;
         this.position = position;
         this.velocity = vec3(2, 0, 0);
         this.max_speed = 1.5;
@@ -105,12 +106,13 @@ export class FishSchool {
         this.drift_mag = 0.3;
 
         this.fish = [];
-        this.min_size = 0.4;
-        this.max_size = 0.6;
+        this.fish_size = fish_size;
+        this.min_size = fish_size - 0.1;
+        this.max_size = fish_size + 0.1;
 
         this.distance_fluctuation_speed = 2 * Math.PI / 40;
-        this.min_distance = 0.5;
-        this.max_distance = 5;
+        this.min_distance = fish_size;
+        this.max_distance = fish_size * 10;
         this.u = 0;
 
         this.DEBUG_MODE = false;
@@ -126,7 +128,7 @@ export class FishSchool {
         }
     }
 
-    update(dt, pond_center, pond_radius) {
+    update(dt) {
         this.u = (this.u + this.distance_fluctuation_speed * dt) % (2 * Math.PI);
 
         // random walk
@@ -144,8 +146,13 @@ export class FishSchool {
         this.position = this.position.plus(this.velocity.times(dt));
 
         // bounce off the walls
-        const distance_from_center = this.position.minus(pond_center).norm();
-        if (distance_from_center > pond_radius || this.position[1] > 0) {
+        const distance_from_center = this.position.minus(this.pond.center).norm();
+        if (distance_from_center > this.pond.swimmable_radius || this.position[1] > this.pond.surface_level) {
+            this.velocity = this.velocity.times(-1);
+            this.drift = this.drift.times(-1);
+        }
+        // keep fish near the surface
+        if (this.position[1] < -this.pond.depth) {
             this.velocity = this.velocity.times(-1);
             this.drift = this.drift.times(-1);
         }
@@ -169,7 +176,7 @@ export class FishSchool {
         }
         // all fish are attracted to the center, when they are too far away
         const center_attraction = 3;
-        const target_distance = 5;
+        const target_distance = 10 * this.fish_size;
         for (let fish of this.fish) {
             const delta = this.position.minus(fish.position);
             const distance = delta.norm();

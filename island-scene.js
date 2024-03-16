@@ -6,12 +6,22 @@ import { WeatherParticleSystem } from './weather-particle-system.js';
 import { Tree } from './tree.js';
 import { Fish, FishSchool } from './animals/fish.js';
 import { Snake } from './animals/snake.js';
-import { random_island_pos, random_pond_pos } from './helpers.js';
+import { random_land_pos, random_pond_pos } from './helpers.js';
+import { Grass } from './grass.js';
 
 const {
     Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene, Texture
 } = tiny;
 
+class Pond {
+    constructor(center, radius) {
+        this.center = center;
+        this.radius = radius;
+        this.swimmable_radius = radius - 5;
+        this.surface_level = -3;
+        this.depth = 10;
+    }
+}
 
 export class MainScene extends Scene {
     constructor() {
@@ -22,14 +32,18 @@ export class MainScene extends Scene {
             // Existing shapes
             ...this.shapes,
             // Road and sidewalk
-            island: new defs.Capped_Cylinder(50, 100),
+            island: new defs.Capped_Cylinder(1, 100),
             water: new defs.Cube(),
             raindropSphere: new defs.Subdivision_Sphere(4),
             snowflakeSphere: new defs.Subdivision_Sphere(1),
             sun: new defs.Subdivision_Sphere(4),
-            pond: new defs.Capped_Cylinder(50, 100),
+            pond: new defs.Regular_2D_Polygon(1, 100),
             plane: new defs.Cube(),
+            cube: new defs.Cube(),
+            pondWall: new defs.Cylindrical_Tube(50, 100),
         };
+
+        this.DEBUG_MODE = false;
 
         this.weatherParticleSystem = new WeatherParticleSystem();
         this.isRaining = false;
@@ -40,7 +54,7 @@ export class MainScene extends Scene {
             // Existing materials
             ...this.materials,
             
-            island: new Material(new defs.Textured_Phong(1), {ambient: 0.8, diffusivity: 0.2, specularity: 0.3, texture: new Texture("assets/textures/grass-5.png")}),
+            island: new Material(new defs.Textured_Phong(1), {ambient: 0.8, diffusivity: 0.0, specularity: 0.0, texture: new Texture("assets/textures/grass-6.png")}),
             
             water: new Material(new defs.Textured_Phong(1), {ambient: 0.9, diffusivity: 0.8, specularity: 0.8, texture: new Texture("assets/textures/water-4.png")}),
             
@@ -52,9 +66,25 @@ export class MainScene extends Scene {
 
             snowflake: new Material(new defs.Phong_Shader(), {color: hex_color("#ffffff"), ambient: 0.9, diffusivity: 0.8, specularity: 1.0}),
 
+            grass: new Material(new defs.Textured_Phong(), {color: color(0.0, 0.2, 0.0, 1.0), ambient: 0.9, diffusivity: 0.8, specularity: 1.0, texture: new Texture("assets/textures/grass-small.png")}),
+            
             snake: new Material(new defs.Fake_Bump_Map(), {ambient: 0.7, diffusivity: 1.0, specularity:1.0, texture: new Texture("assets/textures/snake.jpg")}),
 
-            fish: new Material(new defs.Fake_Bump_Map(), {ambient: 0.5, diffusivity: 1.0, specularity: 1.0, texture: new Texture("assets/textures/fish.jpg")}),
+            fish_grey: new Material(new defs.Fake_Bump_Map(), {ambient: 0.5, diffusivity: 1.0, specularity: 1.0, texture: new Texture("assets/textures/fish.jpg")}),
+
+            fish_yellow: new Material(new defs.Fake_Bump_Map(), {ambient: 0.5, diffusivity: 0.7, specularity: 0.0, texture: new Texture("assets/textures/fish-yellow.jpg")}),
+
+            fish_red: new Material(new defs.Fake_Bump_Map(), {color: color(0.5, 0.0, 0, 1.0), ambient: 0.5, diffusivity: 0.7, specularity: 0.0, texture: new Texture("assets/textures/fish-yellow.jpg")}),
+            fish_blue: new Material(new defs.Fake_Bump_Map(), {color: color(0.0, 0.0, 0.5, 1.0), ambient: 0.5, diffusivity: 0.7, specularity: 0.0, texture: new Texture("assets/textures/fish-yellow.jpg")}),
+            fish_purple: new Material(new defs.Fake_Bump_Map(), {color: color(0.5, 0.0, 0.5, 1.0), ambient: 0.5, diffusivity: 0.7, specularity: 0.0, texture: new Texture("assets/textures/fish-yellow.jpg")}),
+            fish_pink: new Material(new defs.Fake_Bump_Map(), {color: color(1.0, 0.0, 0.0, 1.0), ambient: 0.5, diffusivity: 0.7, specularity: 0.0, texture: new Texture("assets/textures/fish-yellow.jpg")}),
+            fish_white: new Material(new defs.Fake_Bump_Map(), {color: color(1.0, 1.0, 1.0, 1.0), ambient: 0.5, diffusivity: 0.7, specularity: 0.0, texture: new Texture("assets/textures/fish-yellow.jpg")}),
+            fish_black: new Material(new defs.Fake_Bump_Map(), {color: color(0.0, 0.0, 0.0, 1.0), ambient: 0.5, diffusivity: 0.7, specularity: 0.0, texture: new Texture("assets/textures/fish-yellow.jpg")}),
+            fish_orange: new Material(new defs.Fake_Bump_Map(), {color: color(1.0, 0.5, 0.0, 1.0), ambient: 0.5, diffusivity: 0.7, specularity: 0.0, texture: new Texture("assets/textures/fish-yellow.jpg")}),
+            fish_brown: new Material(new defs.Fake_Bump_Map(), {color: color(0.5, 0.25, 0.0, 1.0), ambient: 0.5, diffusivity: 0.7, specularity: 0.0, texture: new Texture("assets/textures/fish-yellow.jpg")}),
+            fish_light_blue: new Material(new defs.Fake_Bump_Map(), {color: color(0.0, 0.5, 1.0, 1.0), ambient: 0.5, diffusivity: 0.7, specularity: 0.0, texture: new Texture("assets/textures/fish-yellow.jpg")}),
+
+            fish_green: new Material(new defs.Fake_Bump_Map(), {ambient: 0.5, diffusivity: 1.0, specularity: 1.0, texture: new Texture("assets/textures/fish-green.jpg")}),
             // fish_eye: new Material(new defs.Phong_Shader(), {color: hex_color("#000000"), ambient: 0.9, diffusivity: 0.8, specularity: 1.0}),
             fish_eye: new Material(new defs.Textured_Phong(), {ambient: 0.9, diffusivity: 0.8, specularity: 1.0, texture: new Texture("assets/textures/fisheye.jpeg")}),
       
@@ -62,7 +92,11 @@ export class MainScene extends Scene {
 
             foliage_material: new Material(new defs.Textured_Phong(), {color: hex_color("#ADD8E6"), ambient: 0.6, diffusivity: 0.1, specularity: 1.0, texture: new Texture("assets/textures/foliage.png")}),
 
-            pondWaterTransparent: new Material(new defs.Phong_Shader(), { color: color(0.4, 0.7, 1, 0.6), ambient: 0.2, diffusivity: 0.8, specularity: 0.9, texture: new Texture("assets/textures/water-3.png") })
+            pondWaterTransparent: new Material(new defs.Textured_Phong(), { color: color(0.4, 0.7, 1, 0.05), ambient: 0.2, diffusivity: 0.8, specularity: 0.9, texture: new Texture("assets/textures/water-small.png") }),
+
+            pondWaterOpaque: new Material(new defs.Textured_Phong(), { color: color(0.4, 0.7, 1, 1), ambient: 0.2, diffusivity: 0, specularity: 0, texture: new Texture("assets/textures/water-small.png") }),
+
+            debug: new Material(new defs.Phong_Shader(), {color: hex_color("#FF0000"), ambient: 0.5, diffusivity: 0.5, specularity: 1.0}),
         };
 
         // Initial camera location
@@ -73,23 +107,59 @@ export class MainScene extends Scene {
         );
 
         // distance at which entities are updated
-        this.entityUpdateDistance = 100;
+        this.entityUpdateDistance = 80;
         this.veryCloseDistance = 20;
         this.inViewBuffer = 0.1;
         this.weatherParticleUpdateDistance = 150;
         this.firstUpdate = true; // update everything on the first frame
         this.human = new Articulated_Human(this.materials.snowflake);
-        this.num_snakes = 10;
+        this.ponds = [
+            new Pond(vec3(56, 0, -122), 55),
+            new Pond(vec3(111, 0, 22), 30),
+            new Pond(vec3(-100, 0, -51), 45),
+            new Pond(vec3(36, 0, -25), 35),
+            new Pond(vec3(-68, 0, 110), 35),
+        ];
+        this.num_snakes = 30;
         this.snakes = []
         for (let i = 0; i < this.num_snakes; i++) {
             const articulated_snake = new Articulated_Snake(this.materials.snake);
-            this.snakes.push(new Snake(random_island_pos(1), articulated_snake));
+            this.snakes.push(new Snake(random_land_pos(this.ponds, 1, 5), articulated_snake));
         }
-        const num_fish_schools = 10;
+        const fish_materials = [
+            this.materials.fish_grey,
+            this.materials.fish_yellow,
+            this.materials.fish_green,
+            this.materials.fish_red,
+            this.materials.fish_blue,
+            this.materials.fish_purple,
+            this.materials.fish_pink,
+            this.materials.fish_white,
+            this.materials.fish_black,
+            this.materials.fish_orange,
+            this.materials.fish_brown,
+            this.materials.fish_light_blue,
+        ]
+        let material_index = 0;
         this.fish_schools = []
-        for (let i = 0; i < num_fish_schools; i++) {
-            this.fish_schools.push(new FishSchool(random_pond_pos(5), this.materials.fish, this.materials.fish_eye));
+        for (const pond of this.ponds) {
+            const num_fish_schools = Math.floor(Math.random() * (6-4) + 4);
+            for (let i = 0; i < num_fish_schools; i++) {
+                const center = random_pond_pos(pond);
+                const fish_count = Math.floor(Math.random() * (10-3) + 3);
+                const fish_material = fish_materials[material_index % fish_materials.length];
+                material_index++;
+                const fish_size = 2.0 - (2.0-0.1) * fish_count / 10;
+                this.fish_schools.push(new FishSchool(center, pond, fish_count, fish_size, fish_material, this.materials.fish_eye));
+            }
         }
+
+        this.grasses = [];
+        this.num_grass = 2000;
+        for (let i = 0; i < this.num_grass; i++) {
+            this.grasses.push(new Grass(random_land_pos(this.ponds, 0, 5), this.materials.grass));
+        }
+        this.grasses.push(new Grass(vec3(1,0, 1), this.materials.grass));
 
         this.usingKeyboardControls = false;
 
@@ -108,6 +178,7 @@ export class MainScene extends Scene {
         this.rotateDir = 0;
 
         // Camera
+        this.godMode = false;
         this.minCameraHeight = 6; // Define the minimum height of the camera above the island
         this.movementSpeed = 20; // Units per second, while pressing
         this.rotationAngleUpDown = 1.0; // Degrees (in radians) per second, while pressing
@@ -132,60 +203,63 @@ export class MainScene extends Scene {
 
     // Controls
     make_control_panel() {
-        this.key_triggered_button("Move Forward", ["w"], () => {
-            this.movingForward = true;
-        }, undefined, () => {
-            this.movingForward = false;
-        });
+        if (!this.godMode) {
+            this.key_triggered_button("Move Forward", ["w"], () => {
+                this.movingForward = true;
+            }, undefined, () => {
+                this.movingForward = false;
+            });
 
-        this.key_triggered_button("Move Backward", ["s"], () => {
-            this.movingBackwards = true;
-        }, undefined, () => {
-            this.movingBackwards = false;
-        });
+            this.key_triggered_button("Move Backward", ["s"], () => {
+                this.movingBackwards = true;
+            }, undefined, () => {
+                this.movingBackwards = false;
+            });
 
-        this.key_triggered_button("Move Left", ["a"], () => {
-            this.movingLeft = true;
-        }, undefined, () => {
-            this.movingLeft = false;
-        });
+            this.key_triggered_button("Move Left", ["a"], () => {
+                this.movingLeft = true;
+            }, undefined, () => {
+                this.movingLeft = false;
+            });
 
-        this.key_triggered_button("Move Right", ["d"], () => {
-            this.movingRight = true;
-        }, undefined, () => {
-            this.movingRight = false;
-        });
+            this.key_triggered_button("Move Right", ["d"], () => {
+                this.movingRight = true;
+            }, undefined, () => {
+                this.movingRight = false;
+            });
 
-        this.key_triggered_button("Look Left", ["ArrowLeft"], () => {
-            this.turningLeft = true;
-        }, undefined, () => {
-            this.turningLeft = false;
-        });
-    
-        this.key_triggered_button("Look Right", ["ArrowRight"], () => {
-            this.turningRight = true;
-        }, undefined, () => {
-            this.turningRight = false;
-        });
-
-        this.key_triggered_button("Look Up", ["ArrowUp"], () => {
-            this.turningUp = true;
-        }, undefined, () => {
-            this.turningUp = false;
-        });
-    
-        this.key_triggered_button("Look Down", ["ArrowDown"], () => {
-            this.turningDown = true;
-        }, undefined, () => {
-            this.turningDown = false;
-        });
+            this.key_triggered_button("Look Left", ["ArrowLeft"], () => {
+                this.turningLeft = true;
+            }, undefined, () => {
+                this.turningLeft = false;
+            });
         
-        this.key_triggered_button("Jump", [" "], () => {
-            if (!this.isJumping) { // Start the jump only if not already jumping
-                this.isJumping = true;
-                this.jumpTime = 0; // Reset the timer at the start of the jump
-            }
-        });
+            this.key_triggered_button("Look Right", ["ArrowRight"], () => {
+                this.turningRight = true;
+            }, undefined, () => {
+                this.turningRight = false;
+            });
+
+            this.key_triggered_button("Look Up", ["ArrowUp"], () => {
+                this.turningUp = true;
+            }, undefined, () => {
+                this.turningUp = false;
+            });
+        
+            this.key_triggered_button("Look Down", ["ArrowDown"], () => {
+                this.turningDown = true;
+            }, undefined, () => {
+                this.turningDown = false;
+            });
+
+            
+            this.key_triggered_button("Jump", [" "], () => {
+                if (!this.isJumping) { // Start the jump only if not already jumping
+                    this.isJumping = true;
+                    this.jumpTime = 0; // Reset the timer at the start of the jump
+                }
+            });
+        }
     
         /*
         this.key_triggered_button("Restart", ["r"], () => {
@@ -234,8 +308,18 @@ export class MainScene extends Scene {
                     let dx = pos[0] - x;
                     let dz = pos[2] - z;
                     let distSquared = dx * dx + dz * dz;
-                    let distanceFromPond = Math.sqrt((pos[0] + 68) ** 2 + (pos[2] - 110) ** 2);
-                    if (distSquared < 30 * 30 || distanceFromPond < 45) {
+                    if (distSquared < 30 * 30) {
+                        tooClose = true;
+                        break;
+                    }
+                }
+
+                for (const pond of this.ponds) {
+                    const pos = pond.center;
+                    let dx = pos[0] - x;
+                    let dz = pos[2] - z;
+                    let distSquared = dx * dx + dz * dz;
+                    if (distSquared < pond.radius * pond.radius) {
                         tooClose = true;
                         break;
                     }
@@ -319,9 +403,9 @@ export class MainScene extends Scene {
         if (!this.context) this.context = context.context;
 
         // Setup program state
-        if (!context.scratchpad.controls) {
-            // this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
-            // program_state.set_camera(this.initial_camera_location);
+        if (!context.scratchpad.controls && this.godMode) {
+            this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
+            program_state.set_camera(this.initial_camera_location);
         }
         this.fov_y = Math.PI / 4;
         this.aspect = context.width / context.height;
@@ -331,16 +415,18 @@ export class MainScene extends Scene {
 
         // Movement
         let moveDir = 0;
-        if (this.movingForward && !this.detectCollisionWithTrees()) {
-            moveDir += 1;
-        } else if (this.movingBackwards) {
-            moveDir -= 1;
-        }
         let moveSidewaysDir = 0;
-        if (this.movingLeft) {
-            moveSidewaysDir += 1;
-        } else if (this.movingRight) {
-            moveSidewaysDir -= 1;
+        if (!this.isJumping) {
+            if (this.movingForward && !this.detectCollisionWithTrees()) {
+                moveDir += 1;
+            } else if (this.movingBackwards) {
+                moveDir -= 1;
+            }
+            if (this.movingLeft) {
+                moveSidewaysDir += 1;
+            } else if (this.movingRight) {
+                moveSidewaysDir -= 1;
+            }
         }
 
         let turnDir = 0;
@@ -410,7 +496,9 @@ export class MainScene extends Scene {
         const at = this.camera_eye.plus(this.camera_forward);
         const up = vec3(0, 1, 0);
 
-        program_state.set_camera(Mat4.look_at(this.camera_eye, at, up));
+        if (!this.godMode) {
+            program_state.set_camera(Mat4.look_at(this.camera_eye, at, up));
+        }
 
         // Setup lighting
         let sun_position = vec4(500, 250, 600, 0);
@@ -444,7 +532,7 @@ export class MainScene extends Scene {
 
         for (let i = 0; i < this.snakes.length; i++) {
             if (this.shouldUpdate(this.snakes[i].getPosition())) {
-                this.snakes[i].update(this.dt);
+                this.snakes[i].update(this.dt, this.ponds);
             }
             if (this.shouldDraw(this.snakes[i].getPosition())) {
                 this.snakes[i].draw(context, program_state);
@@ -459,6 +547,15 @@ export class MainScene extends Scene {
             }
         }
 
+        for (let i = 0; i < this.grasses.length; i++) {
+            if (this.shouldUpdate(this.grasses[i].position)) {
+                this.grasses[i].update(this.dt);
+            }
+            if (this.shouldDraw(this.grasses[i].position)) {
+                this.grasses[i].draw(context, program_state);
+            }
+        }
+
         if (this.treePositions.length === 0) {
             this.addRandomTreePositions(30, 150);
         }
@@ -468,12 +565,22 @@ export class MainScene extends Scene {
                 this.tree.draw(context, program_state, position);
             }
         }
-        this.shapes.pond.draw(context, program_state, Mat4.rotation(Math.PI / 2, 1, 0, 0).times(Mat4.translation(-68, 110, 10)).times(Mat4.scale(45, 40, 18)), this.materials.pondWaterTransparent);
-        this.shapes.plane.draw(context, program_state, Mat4.translation(-30, -21, 110).times(Mat4.scale(1, 20, 35)), this.materials.snowflake);
-        this.shapes.plane.draw(context, program_state, Mat4.translation(-106, -21, 110).times(Mat4.scale(1, 20, 35)), this.materials.snowflake);
-        this.shapes.plane.draw(context, program_state, Mat4.rotation(Math.PI / 2, 1, 0, 0).times(Mat4.translation(-70, 75, 21)).times(Mat4.scale(40, 1, 20)), this.materials.snowflake);
-        this.shapes.plane.draw(context, program_state, Mat4.rotation(Math.PI / 2, 1, 0, 0).times(Mat4.translation(-70, 145 , 21)).times(Mat4.scale(40, 1, 20)), this.materials.snowflake);
+
+        for (const pond of this.ponds) {
+            const pos = pond.center;
+            const islandDepth = 40; // im just guessing
+            if (this.DEBUG_MODE) {
+                this.shapes.cube.draw(context, program_state, Mat4.translation(pos[0], pos[1], pos[2]).times(Mat4.scale(1, 1, 1)), this.materials.debug);
+            }
+            const pondTransform = Mat4.translation(pos[0], pos[1]-0.1, pos[2]).times(Mat4.scale(pond.radius-1,1,pond.radius-1)).times(Mat4.rotation(Math.PI / 2,1,0,0));
+            const pondWallTransform = Mat4.translation(pos[0], pos[1]-islandDepth/2, pos[2]).times(Mat4.scale(pond.radius,islandDepth,pond.radius)).times(Mat4.rotation(Math.PI / 2,1,0,0));
+            const pondBottomTransform = Mat4.translation(pos[0], pos[1]-islandDepth/2+1, pos[2]).times(Mat4.scale(pond.radius,1,pond.radius)).times(Mat4.rotation(Math.PI / 2,1,0,0));
+            this.shapes.pondWall.draw(context, program_state, pondWallTransform, this.materials.pondWaterOpaque);
+            this.shapes.pond.draw(context, program_state, pondBottomTransform, this.materials.pondWaterOpaque);
+            // Don't draw the top of the pond. It covers up the fish
+            // this.shapes.pond.draw(context, program_state, pondTransform, this.materials.pondWaterTransparent);
         
+        }
         this.firstUpdate = false; // no longer the first frame
     }
 

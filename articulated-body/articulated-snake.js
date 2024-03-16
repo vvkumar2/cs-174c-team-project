@@ -67,13 +67,14 @@ class Articulated_Snake extends Articulated_Body_Base {
         this.num_nodes  = num_nodes;
         this.fixed_arc = this.arcs[Math.floor(this.num_nodes * 0.5)];
         this.u = 0; 
-        this.curve_speed = 2;
+        this.curve_speed = 1.5  + 1.0 * (2*Math.random() - 1);
         this.animation_speed = 1;
-        this.curviness_factor = 1;
+        this.curviness_factor = 0.9 + 0.3 * (2*Math.random() - 1);
         this.start_curviness = 0.6;
         this.end_curviness = 1.8;
 
         this.update_matrices();
+        this.position_offset = (this.getPosition().minus(this.root.global_matrix.times(vec4(0, 0, 0, 1)).to3())).norm();
     }
 
     getPosition() {
