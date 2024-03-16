@@ -422,7 +422,7 @@ export class MainScene extends Scene {
         // Movement
         let moveDir = 0;
         let moveSidewaysDir = 0;
-        if (this.movingForward && !this.detectCollisionWithTrees()) {
+        if (this.movingForward && !this.detectCollision()) {
             moveDir += 1;
         } else if (this.movingBackwards) {
             moveDir -= 1;
@@ -588,27 +588,45 @@ export class MainScene extends Scene {
         this.firstUpdate = false; // no longer the first frame
     }
 
-    detectCollisionWithTrees() {
+    detectCollision() {
         // Player (camera) as an entity
         const player = { position: this.camera_position, radius: 0.5 }; 
-        // console.log(player.position);
     
         // Check collision with trees
-        let is_detected = false;
-        for (let treePos of this.treePositions) {
-            const tree = { position: vec3(...treePos), radius: 2.5 };
-            // console.log(tree.position);
-            if (this.is_collision(player, tree)) {
-                console.log("Collided with a tree!");
-                is_detected = true;
+        let isFound = false;
+        for (let tree of this.treePositions) {
+            const t = { position: vec3(...tree), radius: 2.5 };
+            if (this.isCollision(player, t)) {
+                // console.log("Collided with a tree!");
+                isFound = true;
+                break; // Stop checking further if collision is found
+            }
+        }
+
+        // Check collision with snakes
+        for (let snake of this.snakes) {
+            const s = { position: snake.getPosition(), radius: 3.5 };
+            if (this.isCollision(player, s)) {
+                // console.log("Collided with a snake!");
+                isFound = true;
+                break; // Stop checking further if collision is found
+            }
+        }
+
+        // Check collision with ponds
+        for (let pond of this.ponds) {
+            const p = { position: pond.center, radius: pond.radius * 0.7 };
+            if (this.isCollision(player, p)) {
+                // console.log("Collided with a pond!");
+                isFound = true;
                 break; // Stop checking further if collision is found
             }
         }
     
-        return is_detected;
+        return isFound;
     }
 
-    is_collision(obj1, obj2) {
+    isCollision(obj1, obj2) {
         const dx = obj1.position[0] - obj2.position[0];
         // const dy = obj1.position[1] - obj2.position[1];
         const dz = obj1.position[2] - obj2.position[2];
