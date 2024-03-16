@@ -20,7 +20,9 @@
 - **Email**: hae0ne@g.ucla.edu
 - **Student ID**: 205394251
 - **Contributions**:
-  - 
+  - Changed static camera to first person perspective
+  - Implemented collisiond detection with the player and objects
+  - Working on future game components (inventory feature)
 
 ### Rebecca Heo
 - **Email**: heorebecca126@g.ucla.edu
