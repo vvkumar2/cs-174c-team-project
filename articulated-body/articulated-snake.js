@@ -17,12 +17,12 @@ class Articulated_Snake extends Articulated_Body_Base {
         let nodes = [];
         let arcs = [];
 
-        const tail_width = 0.05;
-        const bulge_width = 0.3;
-        const head_width = 0.15;
+        const tail_width = 0.03 + 0.03 * Math.random();
+        const bulge_width = 0.2 + 0.4 * Math.random();
+        const head_width = 0.10 + 0.1 * Math.random();
         const width_bulge_location = 0.75;
-        const node_length = 0.4;
-        const num_nodes = 50;
+        const node_length = 0.3 + 0.2 * Math.random();
+        const num_nodes = 30 + Math.floor(50 * Math.random());
         const width_bulge_index = Math.floor(num_nodes * width_bulge_location);
 
         const body_location = Mat4.translation(node_length, 0, 0);
@@ -67,9 +67,9 @@ class Articulated_Snake extends Articulated_Body_Base {
         this.num_nodes  = num_nodes;
         this.fixed_arc = this.arcs[Math.floor(this.num_nodes * 0.5)];
         this.u = 0; 
-        this.curve_speed = 1.5  + 1.0 * (2*Math.random() - 1);
+        this.curve_speed = 1.0  + 1.0 * (Math.random());
         this.animation_speed = 1;
-        this.curviness_factor = 0.9 + 0.3 * (2*Math.random() - 1);
+        this.curviness_factor = 0.5 + 1.0 * (Math.random());
         this.start_curviness = 0.6;
         this.end_curviness = 1.8;
 

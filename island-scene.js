@@ -17,9 +17,10 @@ class Pond {
     constructor(center, radius) {
         this.center = center;
         this.radius = radius;
-        this.swimmable_radius = radius - 5;
-        this.surface_level = -3;
-        this.depth = 10;
+        this.swimmable_radius = radius;
+        this.surface_level = -1;
+        this.depth = 15;
+        this.swim_center = vec3(center[0], (this.surface_level-this.depth)/2, center[2]);
     }
 }
 
@@ -66,7 +67,7 @@ export class MainScene extends Scene {
 
             snowflake: new Material(new defs.Phong_Shader(), {color: hex_color("#ffffff"), ambient: 0.9, diffusivity: 0.8, specularity: 1.0}),
 
-            grass: new Material(new defs.Textured_Phong(), {color: color(0.0, 0.2, 0.0, 1.0), ambient: 0.9, diffusivity: 0.8, specularity: 1.0, texture: new Texture("assets/textures/grass-small.png")}),
+            grass: new Material(new defs.Phong_Shader(), {color: color(0.0, 0.2, 0.0, 1.0), ambient: 0.9, diffusivity: 0.8, specularity: 1.0, texture: new Texture("assets/textures/grass-small.png")}),
             
             snake: new Material(new defs.Fake_Bump_Map(), {ambient: 0.7, diffusivity: 1.0, specularity:1.0, texture: new Texture("assets/textures/snake.jpg")}),
 
@@ -107,9 +108,10 @@ export class MainScene extends Scene {
         );
 
         // distance at which entities are updated
-        this.entityUpdateDistance = 80;
+        this.entityUpdateDistance = 100;
+        this.plantUpdateDistance = 30;
         this.veryCloseDistance = 20;
-        this.inViewBuffer = 0.1;
+        this.inViewBuffer = 0.2;
         this.weatherParticleUpdateDistance = 150;
         this.firstUpdate = true; // update everything on the first frame
         this.human = new Articulated_Human(this.materials.snowflake);
@@ -120,11 +122,11 @@ export class MainScene extends Scene {
             new Pond(vec3(36, 0, -25), 35),
             new Pond(vec3(-68, 0, 110), 35),
         ];
-        this.num_snakes = 30;
+        this.num_snakes = 40;
         this.snakes = []
         for (let i = 0; i < this.num_snakes; i++) {
             const articulated_snake = new Articulated_Snake(this.materials.snake);
-            this.snakes.push(new Snake(random_land_pos(this.ponds, 1, 5), articulated_snake));
+            this.snakes.push(new Snake(random_land_pos(this.ponds, 0.2, 5), articulated_snake));
         }
         const fish_materials = [
             this.materials.fish_grey,
@@ -146,16 +148,16 @@ export class MainScene extends Scene {
             const num_fish_schools = Math.floor(Math.random() * (6-4) + 4);
             for (let i = 0; i < num_fish_schools; i++) {
                 const center = random_pond_pos(pond);
-                const fish_count = Math.floor(Math.random() * (10-3) + 3);
+                const fish_count = (i == 0) ? 7 : Math.floor(Math.random() * (7-3) + 3);
                 const fish_material = fish_materials[material_index % fish_materials.length];
                 material_index++;
-                const fish_size = 2.0 - (2.0-0.1) * fish_count / 10;
+                const fish_size = 2.0 - (2.0-0.5) * fish_count / 10;
                 this.fish_schools.push(new FishSchool(center, pond, fish_count, fish_size, fish_material, this.materials.fish_eye));
             }
         }
 
         this.grasses = [];
-        this.num_grass = 2000;
+        this.num_grass = 3000;
         for (let i = 0; i < this.num_grass; i++) {
             this.grasses.push(new Grass(random_land_pos(this.ponds, 0, 5), this.materials.grass));
         }
@@ -190,7 +192,7 @@ export class MainScene extends Scene {
 
         // Jumping
         this.isJumping = false;
-        this.jumpInitialVelocity = 18; // Initial upward velocity
+        this.jumpInitialVelocity = 30; // Initial upward velocity
         this.gravity = 30; // Gravity, pulling the camera back down
         this.jumpVerticalOffset = 0; // Current vertical offset from the starting position
         this.jumpTime = 0; // Time since the jump started
@@ -369,6 +371,10 @@ export class MainScene extends Scene {
         return this.firstUpdate || (this.isClose(pos, this.entityUpdateDistance) && this.inView(pos, false))
             || this.isVeryClose(pos);
     }
+
+    shouldUpdatePlant(pos) {
+        return this.firstUpdate || (this.isClose(pos, this.plantUpdateDistance) && this.inView(pos, false));
+    }
     
     shouldDraw(pos) {
         // close objects might not have their center in view
@@ -542,13 +548,11 @@ export class MainScene extends Scene {
             if (this.shouldUpdate(this.fish_schools[i].position)) {
                 this.fish_schools[i].update(this.dt, vec3(-68, 10, 110), 25);
             }
-            if (this.shouldDraw(this.fish_schools[i].position)) {
-                this.fish_schools[i].draw(context, program_state);                
-            }
+            this.fish_schools[i].draw(context, program_state, (pos) => this.shouldDraw(pos));              
         }
 
         for (let i = 0; i < this.grasses.length; i++) {
-            if (this.shouldUpdate(this.grasses[i].position)) {
+            if (this.shouldUpdatePlant(this.grasses[i].position)) {
                 this.grasses[i].update(this.dt);
             }
             if (this.shouldDraw(this.grasses[i].position)) {

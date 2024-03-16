@@ -52,12 +52,15 @@ export class Snake {
             var binormal_dir = tangent_dir.cross(normal_dir);
         }
         // Create location matrix based on Frenet frame
-        let location_matrix = Mat4.inverse(Mat4.look_at(this.position, this.position.plus(normal_dir), binormal_dir));
-        location_matrix = location_matrix.times(Mat4.translation(-this.articulated_snake.position_offset*0.8, 0, 0));
+        try {
+            var location_matrix = Mat4.inverse(Mat4.look_at(this.position, this.position.plus(normal_dir), binormal_dir));
+            location_matrix = location_matrix.times(Mat4.translation(-this.articulated_snake.position_offset*0.8, 0, 0));
         
-        this.articulated_snake.set_location(location_matrix);
-        const speed = this.velocity.norm();
-        // this.articulated_snake.set_animation_speed(speed/this.default_speed);
+            this.articulated_snake.set_location(location_matrix);
+            const speed = this.velocity.norm();
+        } catch (e) {
+            console.log(e);
+        }
     }
 
 
@@ -74,16 +77,16 @@ export class Snake {
         for (const pond of ponds) {
             const delta = pond.center.minus(this.position);
             const distance = delta.norm();
-            if (distance < pond.radius) {  
+            if (distance < pond.radius+5) {  
                 const direction = delta.normalized();
-                this.acceleration = this.acceleration.minus(2*direction);
+                this.acceleration = this.acceleration.minus(direction.times(2));
                 this.drift = direction.times(-1.0);
             }
         }
 
         // discourage movement outside of island
         const distance_from_center = this.position.norm();
-        if (distance_from_center > 200) {
+        if (distance_from_center > 200-5) {
             const direction = this.position.normalized();
             this.acceleration = this.acceleration.minus(direction.times(1.0));
             this.drift = direction.times(-1.0);

@@ -8,6 +8,9 @@ const shapes = {
 }
 
 const materials = {
+    school_center: new Material(new defs.Phong_Shader(), {
+        ambient: 1, diffusivity: 0, specularity: 0, color: hex_color("#00FF00")
+    }),
     center: new Material(new defs.Phong_Shader(), {
         ambient: 1, diffusivity: 0, specularity: 0, color: hex_color("#FF0000")
     }),
@@ -17,7 +20,8 @@ const materials = {
 }
 
 export class Fish {
-    constructor(position, articulated_fish) {
+    constructor(position, articulated_fish, pond) {
+        this.pond = pond;
         this.max_speed = 3;
         this.position = position;
         this.velocity = vec3(1, 0, 0);
@@ -47,11 +51,14 @@ export class Fish {
             var binormal_dir = tangent_dir.cross(normal_dir);
         }
         // Create location matrix based on Frenet frame
-        const location_matrix = Mat4.inverse(Mat4.look_at(this.position, this.position.plus(normal_dir), binormal_dir));
-        
-        this.articulated_fish.set_location(location_matrix);
-        const speed = this.velocity.norm();
-        this.articulated_fish.set_animation_speed(Math.min(1, speed/this.max_speed));
+        try {
+            var location_matrix = Mat4.inverse(Mat4.look_at(this.position, this.position.plus(normal_dir), binormal_dir));
+            this.articulated_fish.set_location(location_matrix);
+            const speed = this.velocity.norm();
+            this.articulated_fish.set_animation_speed(Math.min(1, speed/this.max_speed));    
+        } catch (e) {
+            console.log(e);
+        }
     }
 
     update(dt) {
@@ -64,7 +71,15 @@ export class Fish {
         this.acceleration = this.acceleration.plus(this.drift.times(drift_mag));
 
         // discourage vertical movement
-        this.acceleration[1] = this.acceleration[1]*0.25;
+        this.acceleration[1] = this.acceleration[1]*0.15;
+
+        // discourage movement through walls of pond
+        const distance_from_center = this.position.minus(this.pond.swim_center).norm();
+        if (distance_from_center > this.pond.swimmable_radius || this.position[1] > this.pond.surface_level || this.position[1] < -this.pond.depth) {
+            const direction = this.pond.swim_center.minus(this.position).normalized();
+            this.acceleration = this.acceleration.plus(direction.times(10));
+            this.drift = direction;
+        }
 
         this.velocity = this.velocity.plus(this.acceleration.times(dt));
         // cap speed
@@ -99,7 +114,7 @@ export class FishSchool {
         const spread = 5;
         this.position = position;
         this.velocity = vec3(2, 0, 0);
-        this.max_speed = 1.5;
+        this.max_speed = 1.0;
         this.acceleration = vec3(0, 0, 0);
         this.drift = vec3(0, 0, 0);
         this.drift_variation = 0.05;
@@ -122,7 +137,7 @@ export class FishSchool {
             const offset = vec3(Math.random() * spread - spread/2, Math.random() * spread - spread/2, Math.random() * spread - spread/2);
             const size = this.min_size + Math.random() * (this.max_size - this.min_size);
             const articulated_fish = new Articulated_Fish(body_material, eye_material, size);
-            const fish = new Fish(this.position.plus(offset), articulated_fish);
+            const fish = new Fish(this.position.plus(offset), articulated_fish, pond);
             fish.DEBUG_MODE = this.DEBUG_MODE;
             this.fish.push(fish);
         }
@@ -146,7 +161,7 @@ export class FishSchool {
         this.position = this.position.plus(this.velocity.times(dt));
 
         // bounce off the walls
-        const distance_from_center = this.position.minus(this.pond.center).norm();
+        const distance_from_center = this.position.minus(this.pond.swim_center).norm();
         if (distance_from_center > this.pond.swimmable_radius || this.position[1] > this.pond.surface_level) {
             this.velocity = this.velocity.times(-1);
             this.drift = this.drift.times(-1);
@@ -176,7 +191,7 @@ export class FishSchool {
         }
         // all fish are attracted to the center, when they are too far away
         const center_attraction = 3;
-        const target_distance = 10 * this.fish_size;
+        const target_distance = 3 * this.fish_size;
         for (let fish of this.fish) {
             const delta = this.position.minus(fish.position);
             const distance = delta.norm();
@@ -199,7 +214,7 @@ export class FishSchool {
         // draw center if debugging
         if (this.DEBUG_MODE) {  
             let transform = Mat4.translation(this.position[0], this.position[1], this.position[2]).times(Mat4.scale(0.1, 0.1, 0.1));
-            shapes.center.draw(webgl_manager, uniforms, transform, materials.center);
+            shapes.center.draw(webgl_manager, uniforms, transform, materials.school_center);
             const drift_pos = this.position.plus(this.drift.times(1));
             let drift_transform = Mat4.translation(drift_pos[0], drift_pos[1], drift_pos[2]).times(Mat4.scale(0.05, 0.05, 0.05));
             shapes.center.draw(webgl_manager, uniforms, drift_transform, materials.center);

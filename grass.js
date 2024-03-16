@@ -11,14 +11,14 @@ export class Grass {
 
         this.grass_material = grass_material;
         this.num_tuffs = Math.floor(2 + Math.random() * 2); // Number of tuffs of grass
-        const size = 1.0 + Math.random() * 2.0;
+        const size = 1.0 + Math.random() * 4.0;
         this.sizes = [];
         for (let i = 0; i < this.num_tuffs; i++) {
             this.sizes.push(size + (2*Math.random() - 1) * 0.5);
         }
         this.tilts = [];
         for (let i = 0; i < this.num_tuffs; i++) {
-            this.tilts.push(Math.PI/6 + (2*Math.random() - 1) * Math.PI/12);
+            this.tilts.push(Math.PI/6);
         }
         this.tilt_variation = Math.PI/6;
         this.animation_speed = 0.1 + Math.random() * 0.2;
@@ -28,9 +28,9 @@ export class Grass {
         }
         this.speeds = [];
         for (let i = 0; i < this.num_tuffs; i++) {
-            this.speeds.push(0.2 + Math.random() * 0.3);
+            this.speeds.push(0.2 + Math.random() * 0.4);
         }
-        this.width = 0.1 + Math.random() * 0.3;
+        this.width = 0.2 + Math.random() * 0.1  ;
     }
 
     update(dt) {
