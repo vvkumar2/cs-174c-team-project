@@ -331,7 +331,7 @@ export class MainScene extends Scene {
 
         // Movement
         let moveDir = 0;
-        if (this.movingForward) {
+        if (this.movingForward && !this.detectCollisionWithTrees()) {
             moveDir += 1;
         } else if (this.movingBackwards) {
             moveDir -= 1;
@@ -475,6 +475,37 @@ export class MainScene extends Scene {
         this.shapes.plane.draw(context, program_state, Mat4.rotation(Math.PI / 2, 1, 0, 0).times(Mat4.translation(-70, 145 , 21)).times(Mat4.scale(40, 1, 20)), this.materials.snowflake);
         
         this.firstUpdate = false; // no longer the first frame
+    }
+
+    detectCollisionWithTrees() {
+        // Player (camera) as an entity
+        const player = { position: this.camera_position, radius: 0.5 }; 
+        // console.log(player.position);
+    
+        // Check collision with trees
+        let is_detected = false;
+        for (let treePos of this.treePositions) {
+            const tree = { position: vec3(...treePos), radius: 2.5 };
+            // console.log(tree.position);
+            if (this.is_collision(player, tree)) {
+                console.log("Collided with a tree!");
+                is_detected = true;
+                break; // Stop checking further if collision is found
+            }
+        }
+    
+        return is_detected;
+    }
+
+    is_collision(obj1, obj2) {
+        const dx = obj1.position[0] - obj2.position[0];
+        // const dy = obj1.position[1] - obj2.position[1];
+        const dz = obj1.position[2] - obj2.position[2];
+        const distance = Math.sqrt(dx * dx + dz * dz);
+
+        const sum = obj1.radius + obj2.radius;
+
+        return distance < sum;
     }
 }
 
