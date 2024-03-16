@@ -26,6 +26,9 @@
 - **Email**: heorebecca126@g.ucla.edu
 - **Student ID**: 805333858
 - **Contributions**:
+  - Created trees on island
+  - User interface inclduing home screen, timer, control panel, etc.
+  - Improved camera movement to imitate walking motion
 
 
 ## How to Run
