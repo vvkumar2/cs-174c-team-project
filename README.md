@@ -6,6 +6,11 @@
 - **Email**: daviddavini@g.ucla.edu
 - **Student ID**: 805290571
 - **Contributions**: 
+  - Created the snake and fish models and animations (Articulated Bodies & Forward Kinematics)
+  - Created Fish schooling behavior and snake movement (Frenet Frame & Discrete Fluid Model)
+  - Added swaying grass
+  - Visibility culling optimization
+  - Other misc. tasks
 
 ### Varun Kumar
 - **Email**: vvkumar1@g.ucla.edu
@@ -29,7 +34,7 @@
 - **Student ID**: 805333858
 - **Contributions**:
   - Created trees on island
-  - User interface inclduing home screen, timer, control panel, etc.
+  - User interface including home screen, timer, control panel, etc.
   - Improved camera movement to imitate walking motion
 
 
