@@ -63,10 +63,22 @@ The fish animation utilizes a similar approach, with the added complexity of fin
 ## Challenges
 One significant challenge we encountered was optimizing the game's performance to maintain a smooth frame rate. Initially, the complex scene, with numerous objects requiring frequent updates and rendering, significantly impacted performance. Our solution involved implementing a visibility culling mechanism, where only objects within the player's immediate field of view and close vicinity are updated and rendered. This optimization significantly improved frame rates without compromising the game's visual quality or depth.
 
-Another challenge ... [Add one more challenge]
+Also, creating the snake and fish models and animations using articulated bodies was also a bit challenging. They are both constructed out of just two simple shapes: spheres and triangles. Getting all of the node and arc transforms correct for the articulated body was tricky for sure. Also, animating them realistically took a lot of trial and error: we relied on lots of sinusoidal paths in parameter space to the fish fins flip and the snake slither. But we think the end result is really slick and realistic!
+
+Lastly, getting the fish and snake orientations correct was challenging. Their orientations are determined by the Frenet Frame formulas. Initially, we used the full Frenet Frame formulas
+depending on the true normal and binormal vectors of the animal's path. However, this caused the fish to flip sideways and upside-down, which is unrealistic. Instead, we decided to keep the normal direction set to the positive y direction, and calculate the binormal vector based on this. This kept the fish and snakes upright.
 
 ## Contributions
-[We need to write about what each team member contributed]
+David created the snake and fish models and animations using articulated bodies and forward kinematics. He also created the fish schooling behavior and snake movement using the Frenet Frame and Discrete Fluid Model. He added swaying grass and implemented visibility culling optimization. He also worked on other miscellaneous tasks.
+
+Varun created the initial island setup including drawing the island, ocean, sun/moon, etc. He also created the rain/snow using Particle Systems and implemented basic camera movement. He also created the ponds scattered around the island for the fish to swim in. 
+He also worked on other miscellaneous tasks.
+
+Hae Won changed the static camera to a first person perspective and implemented collision detection with the player and objects. She also worked on future game components such as the inventory feature.
+
+Rebecca created the trees on the island and the user interface including the home screen, timer, control panel, etc. She also improved the camera movement to imitate walking motion.
+
+We believe that all members of our team contributed equally to the project. We all worked hard together to create the game and are satisfied with the final product.
 
 ## Conclusion
 "Into the Unknown" dispalys our team's creative vision. By integrating advanced computer animation algorithms, we have crafted an engaging and visually stunning simulation game. This project not only challenged us to apply and extend our knowledge of 3D animation and web development but also provided invaluable insights into performance optimization and user interaction design. As we look to the future, we are excited to explore further enhancements and continue pushing the boundaries of what is possible in web-based gaming.
