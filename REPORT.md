@@ -71,8 +71,7 @@ depending on the true normal and binormal vectors of the animal's path. However,
 ## Contributions
 David created the snake and fish models and animations using articulated bodies and forward kinematics. He also created the fish schooling behavior and snake movement using the Frenet Frame and Discrete Fluid Model. He added swaying grass and implemented visibility culling optimization. He also worked on other miscellaneous tasks.
 
-Varun created the initial island setup including drawing the island, ocean, sun/moon, etc. He also created the rain/snow using Particle Systems and implemented basic camera movement. He also created the ponds scattered around the island for the fish to swim in. 
-He also worked on other miscellaneous tasks.
+Varun created the initial island setup including drawing the island, ocean, sun/moon, etc. He also created the rain/snow using Particle Systems and implemented basic camera movement. He also created the ponds scattered around the island for the fish to swim in. He also worked on other miscellaneous tasks.
 
 Hae Won changed the static camera to a first person perspective and implemented collision detection with the player and objects. She also worked on future game components such as the inventory feature.
 

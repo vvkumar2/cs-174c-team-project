@@ -26,7 +26,7 @@
 - **Student ID**: 205394251
 - **Contributions**:
   - Changed static camera to first person perspective
-  - Implemented collisiond detection with the player and objects
+  - Implemented collision detection with the player and objects
   - Working on future game components (inventory feature)
 
 ### Rebecca Heo
